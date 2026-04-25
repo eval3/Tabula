@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Bookmark",
+  "version": "1.0.0",
+  "description": "智能书签管理：自动分类、一键整理",
+  "permissions": ["bookmarks", "tabs", "storage", "activeTab"],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/index.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "classify-and-bookmark": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "收藏当前页面并智能分类"
+    }
+  }
+}
