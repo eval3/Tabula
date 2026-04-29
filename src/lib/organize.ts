@@ -55,6 +55,7 @@ export async function organizeAllBookmarks(
     }
     return { status: 'success' }
   } catch (err) {
+    console.error('[SmartBookmark] organizeAllBookmarks failed:', err)
     return { status: 'error', error: err instanceof Error ? err.message : '未知错误' }
   }
 }

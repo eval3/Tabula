@@ -1,18 +1,15 @@
 import { useState } from 'react'
 import { PROVIDERS, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
-import { organizeAllBookmarks, type OrganizeProgress } from '../lib/organize'
-
-type Status = 'idle' | 'loading' | 'success' | 'error' | 'no-key'
+import { organizeAllBookmarks, type OrganizeProgress, type OrganizeStatus } from '../lib/organize'
 
 export default function App() {
-  const [status, setStatus] = useState<Status>('idle')
+  const [status, setStatus] = useState<OrganizeStatus>('idle')
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [errorMsg, setErrorMsg] = useState('')
 
   async function handleOrganizeAll() {
     console.log('[SmartBookmark] 点击一键整理')
     setStatus('loading')
-    setProgress({ done: 0, total: 0 })
     const result = await organizeAllBookmarks((p: OrganizeProgress) => setProgress(p))
     if (result.status === 'no-key') {
       setStatus('no-key')
