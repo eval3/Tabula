@@ -3,15 +3,21 @@ export interface BookmarkNode {
   title: string
   url?: string
   children?: BookmarkNode[]
+  dateAdded?: number
 }
 
 const SYSTEM_IDS = new Set(['0', '1', '2', '3'])
+const SYSTEM_TITLES = new Set(['书签栏', '其他书签', '移动设备书签', 'Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks'])
+
+function isSystemNode(node: BookmarkNode): boolean {
+  return SYSTEM_IDS.has(node.id) || SYSTEM_TITLES.has(node.title)
+}
 
 export function getDisplayRoots(tree: BookmarkNode[]): BookmarkNode[] {
   const roots: BookmarkNode[] = []
   function traverse(nodes: BookmarkNode[]) {
     for (const node of nodes) {
-      if (SYSTEM_IDS.has(node.id)) {
+      if (isSystemNode(node)) {
         if (node.children) traverse(node.children)
       } else if (!node.url) {
         roots.push(node)
@@ -59,4 +65,67 @@ export function findNodeById(id: string, tree: BookmarkNode[]): BookmarkNode | n
     }
   }
   return null
+}
+
+export function getRecentBookmarks(tree: BookmarkNode[], limit: number): BookmarkNode[] {
+  const bookmarks: BookmarkNode[] = []
+  function traverse(nodes: BookmarkNode[]) {
+    for (const node of nodes) {
+      if (node.url) bookmarks.push(node)
+      if (node.children) traverse(node.children)
+    }
+  }
+  traverse(tree)
+  bookmarks.sort((a, b) => (b.dateAdded ?? 0) - (a.dateAdded ?? 0))
+  return bookmarks.slice(0, limit)
+}
+
+export function getAllBookmarksInFolder(node: BookmarkNode): BookmarkNode[] {
+  const bookmarks: BookmarkNode[] = []
+  function traverse(n: BookmarkNode) {
+    if (n.url) bookmarks.push(n)
+    n.children?.forEach(traverse)
+  }
+  traverse(node)
+  return bookmarks
+}
+
+export function getBookmarkPath(bookmarkId: string, tree: BookmarkNode[]): string | undefined {
+  function walk(nodes: BookmarkNode[], path: string[]): string | undefined {
+    for (const node of nodes) {
+      if (isSystemNode(node)) {
+        if (node.children) {
+          const found = walk(node.children, path)
+          if (found) return found
+        }
+      } else if (!node.url) {
+        const nextPath = [...path, node.title]
+        if (node.children) {
+          for (const child of node.children) {
+            if (child.id === bookmarkId) return nextPath.join('/')
+          }
+          const found = walk(node.children, nextPath)
+          if (found) return found
+        }
+      }
+    }
+    return undefined
+  }
+  return walk(tree, [])
+}
+
+export function getAllFolders(tree: BookmarkNode[]): BookmarkNode[] {
+  const folders: BookmarkNode[] = []
+  function traverse(nodes: BookmarkNode[]) {
+    for (const node of nodes) {
+      if (isSystemNode(node)) {
+        if (node.children) traverse(node.children)
+      } else if (!node.url) {
+        folders.push(node)
+        if (node.children) traverse(node.children)
+      }
+    }
+  }
+  traverse(tree)
+  return folders
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getDisplayRoots, getAllFolderIds, searchBookmarks, findNodeById } from './utils'
+import { getDisplayRoots, getAllFolderIds, searchBookmarks, findNodeById, getRecentBookmarks, getAllBookmarksInFolder } from './utils'
 import type { BookmarkNode } from './utils'
 
 const MOCK_TREE: BookmarkNode[] = [
@@ -82,5 +82,63 @@ describe('findNodeById', () => {
 
   it('找不到时返回 null', () => {
     expect(findNodeById('999', MOCK_TREE)).toBeNull()
+  })
+})
+
+describe('getRecentBookmarks', () => {
+  it('返回最近的书签，按 dateAdded 降序', () => {
+    const tree: BookmarkNode[] = [
+      { id: '0', title: '', children: [
+        { id: 'a', title: 'Old', url: 'https://old.com', dateAdded: 1000 },
+        { id: 'b', title: 'New', url: 'https://new.com', dateAdded: 3000 },
+        { id: 'c', title: 'Mid', url: 'https://mid.com', dateAdded: 2000 },
+      ]},
+    ]
+    const results = getRecentBookmarks(tree, 2)
+    expect(results.map(r => r.id)).toEqual(['b', 'c'])
+  })
+
+  it('dateAdded 缺失时视为 0', () => {
+    const tree: BookmarkNode[] = [
+      { id: '0', title: '', children: [
+        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: 500 },
+        { id: 'b', title: 'B', url: 'https://b.com' },
+      ]},
+    ]
+    const results = getRecentBookmarks(tree, 10)
+    expect(results[0].id).toBe('a')
+  })
+
+  it('不返回文件夹节点', () => {
+    const tree: BookmarkNode[] = [
+      { id: '0', title: '', children: [
+        { id: 'f', title: 'Folder', children: [] },
+        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: 100 },
+      ]},
+    ]
+    expect(getRecentBookmarks(tree, 10).length).toBe(1)
+  })
+})
+
+describe('getAllBookmarksInFolder', () => {
+  it('递归收集文件夹内所有书签', () => {
+    const folder: BookmarkNode = {
+      id: '10', title: '前端开发', children: [
+        { id: '101', title: 'React', url: 'https://react.dev' },
+        { id: '11', title: 'React', children: [
+          { id: '111', title: 'Hooks', url: 'https://react.dev/hooks' },
+        ]},
+      ],
+    }
+    const results = getAllBookmarksInFolder(folder)
+    expect(results.map(r => r.id).sort()).toEqual(['101', '111'].sort())
+  })
+
+  it('空文件夹返回空数组', () => {
+    expect(getAllBookmarksInFolder({ id: 'x', title: 'Empty', children: [] })).toEqual([])
+  })
+
+  it('只有文件夹本身没有书签时返回空数组', () => {
+    expect(getAllBookmarksInFolder({ id: 'x', title: 'Empty' })).toEqual([])
   })
 })
