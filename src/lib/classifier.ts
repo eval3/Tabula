@@ -67,7 +67,9 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       })
-      result = res.choices[0]?.message?.content?.trim() ?? ''
+      const choice = res.choices[0]?.message
+      // DeepSeek R1 等模型有时内容在 reasoning_content 而非 content
+      result = (choice?.content ?? (choice as unknown as Record<string, string>)?.reasoning_content ?? '').trim()
       console.log('usage:', res.usage)
     }
 
@@ -102,7 +104,9 @@ ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
 
 书签：${title} | ${shortUrl}`
 
-  return callLLM(config, prompt, 64)
+  const result = await callLLM(config, prompt, 2048)
+  if (!result) throw new Error('AI 返回了空响应，请检查模型名称或 API Key 是否正确')
+  return result
 }
 
 export async function classifyBookmarks(
