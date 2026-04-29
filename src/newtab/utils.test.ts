@@ -32,6 +32,19 @@ describe('getDisplayRoots', () => {
     const roots = getDisplayRoots(MOCK_TREE)
     expect(roots.map(r => r.id)).toEqual(['10', '20'])
   })
+
+  it('同时跳过 id 2 和 3 的系统节点', () => {
+    const treeWithAllSystemIds: BookmarkNode[] = [
+      { id: '0', title: '', children: [
+        { id: '2', title: 'Other bookmarks', children: [
+          { id: '30', title: '工作', children: [] },
+        ]},
+        { id: '3', title: 'Mobile bookmarks', children: [] },
+      ]},
+    ]
+    const roots = getDisplayRoots(treeWithAllSystemIds)
+    expect(roots.map(r => r.id)).toEqual(['30'])
+  })
 })
 
 describe('getAllFolderIds', () => {
