@@ -68,7 +68,11 @@ function FolderNode({
         style={{ paddingLeft: `${6 + depth * 14}px` }}
         onClick={() => onSelectFolder(node.id)}
         onDragOver={(e) => { e.preventDefault(); onDragOver(node.id) }}
-        onDragLeave={(e) => { e.stopPropagation(); onDragLeave() }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return
+          e.stopPropagation()
+          onDragLeave()
+        }}
         onDrop={(e) => { e.preventDefault(); onDrop(node.id) }}
       >
         {hasChildren ? (
