@@ -25,6 +25,9 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "chrome_url_overrides": {
+    "newtab": "src/newtab/index.html"
+  },
   "commands": {
     "classify-and-bookmark": {
       "suggested_key": {
