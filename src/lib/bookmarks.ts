@@ -48,17 +48,28 @@ export async function getOrCreateFolder(folderPath: string): Promise<string> {
   if (segments.length === 0) throw new Error('Invalid folder path')
 
   const folders = await getAllFolders()
-  let parentId = '1'  // 书签栏根目录
+  console.log('[SmartBookmark] getOrCreateFolder:', folderPath, '| segments:', segments)
+
+  // 从书签树动态找到书签栏真实 ID，避免硬编码 '1' 失效
+  const tree = await chrome.bookmarks.getTree()
+  const barNode = tree[0]?.children?.find(n => !n.url)
+  const barId = barNode?.id ?? '1'
+  console.log('[SmartBookmark] 书签栏根节点 id:', barId, 'title:', barNode?.title)
+
+  let parentId = barId
   let currentPath = ''
 
   for (const segment of segments) {
     currentPath = currentPath ? `${currentPath}/${segment}` : segment
     if (folders[currentPath]) {
       parentId = folders[currentPath]
+      console.log('[SmartBookmark]   已存在:', currentPath, '→ id:', parentId)
     } else {
+      console.log('[SmartBookmark]   创建文件夹:', segment, '在 parentId:', parentId)
       const newFolder = await chrome.bookmarks.create({ parentId, title: segment })
-      folders[currentPath] = newFolder.id  // 更新本次调用的本地缓存
+      folders[currentPath] = newFolder.id
       parentId = newFolder.id
+      console.log('[SmartBookmark]   创建成功，新 id:', parentId)
     }
   }
 
