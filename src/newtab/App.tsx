@@ -15,6 +15,7 @@ export default function App() {
   const [organizeStatus, setOrganizeStatus] = useState<OrganizeStatus>('idle')
   const [organizeProgress, setOrganizeProgress] = useState<OrganizeProgress>({ done: 0, total: 0 })
   const [showFullPath, setShowFullPath] = useState(false)
+  const [recentMonths, setRecentMonths] = useState(1)
 
   async function loadTree() {
     const tree = await chrome.bookmarks.getTree()
@@ -31,8 +32,8 @@ export default function App() {
       const folder = findNodeById(selectedFolderId, bookmarkTree)
       return folder ? getAllBookmarksInFolder(folder) : []
     }
-    return getRecentBookmarks(bookmarkTree, 50)
-  }, [searchQuery, bookmarkTree, selectedFolderId])
+    return getRecentBookmarks(bookmarkTree, recentMonths)
+  }, [searchQuery, bookmarkTree, selectedFolderId, recentMonths])
 
   const sectionTitle = useMemo(() => {
     if (searchQuery.trim()) return `搜索"${searchQuery}"`
@@ -42,6 +43,8 @@ export default function App() {
     }
     return '最近添加'
   }, [searchQuery, selectedFolderId, bookmarkTree])
+
+  const isRecentView = !searchQuery.trim() && !selectedFolderId
 
   const folderOptions = useMemo(() => getAllFolders(bookmarkTree), [bookmarkTree])
 
@@ -118,6 +121,16 @@ export default function App() {
           <span className="toggle-label">完整路径</span>
         </label>
         <span className="section-count">{bookmarksWithFolder.length} 个书签</span>
+        {isRecentView && (
+          <select
+            className="recent-range-select"
+            value={recentMonths}
+            onChange={e => setRecentMonths(Number(e.target.value))}
+          >
+            <option value={1}>最近 1 月</option>
+            <option value={3}>最近 3 月</option>
+          </select>
+        )}
       </div>
 
       <div className="card-grid">

@@ -67,17 +67,20 @@ export function findNodeById(id: string, tree: BookmarkNode[]): BookmarkNode | n
   return null
 }
 
-export function getRecentBookmarks(tree: BookmarkNode[], limit: number): BookmarkNode[] {
+export function getRecentBookmarks(tree: BookmarkNode[], months = 1): BookmarkNode[] {
+  const cutoff = Date.now() - months * 30 * 24 * 60 * 60 * 1000
   const bookmarks: BookmarkNode[] = []
   function traverse(nodes: BookmarkNode[]) {
     for (const node of nodes) {
-      if (node.url) bookmarks.push(node)
+      if (node.url && (node.dateAdded == null || node.dateAdded >= cutoff)) {
+        bookmarks.push(node)
+      }
       if (node.children) traverse(node.children)
     }
   }
   traverse(tree)
   bookmarks.sort((a, b) => (b.dateAdded ?? 0) - (a.dateAdded ?? 0))
-  return bookmarks.slice(0, limit)
+  return bookmarks
 }
 
 export function getAllBookmarksInFolder(node: BookmarkNode): BookmarkNode[] {

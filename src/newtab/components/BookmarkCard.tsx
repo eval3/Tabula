@@ -23,7 +23,7 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(bookmark.title)
   const [editFolderId, setEditFolderId] = useState<string>('')
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   let hostname = url
   try { hostname = new URL(url).hostname } catch {}
@@ -57,15 +57,15 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
     onUpdated()
   }
 
-  async function handleDelete(e: React.MouseEvent) {
+  function openDeleteModal(e: React.MouseEvent) {
     e.stopPropagation()
-    if (confirmDelete) {
-      await chrome.bookmarks.remove(bookmark.id)
-      onUpdated()
-    } else {
-      setConfirmDelete(true)
-      setTimeout(() => setConfirmDelete(false), 3000)
-    }
+    setShowDeleteModal(true)
+  }
+
+  async function confirmDelete() {
+    await chrome.bookmarks.remove(bookmark.id)
+    setShowDeleteModal(false)
+    onUpdated()
   }
 
   return (
@@ -78,11 +78,7 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
-          <button
-            className={`card-delete-btn${confirmDelete ? ' confirm' : ''}`}
-            onClick={handleDelete}
-            title={confirmDelete ? '确认删除' : '删除书签'}
-          >
+          <button className="card-delete-btn" onClick={openDeleteModal} title="删除书签">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -133,6 +129,26 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
             <div className="modal-footer">
               <button className="modal-btn cancel" onClick={() => setEditing(false)}>取消</button>
               <button className="modal-btn save" onClick={handleSave}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>删除书签</h3>
+              <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-confirm-text">
+                确认删除「<strong>{bookmark.title || url}</strong>」？删除后无法恢复。
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => setShowDeleteModal(false)}>取消</button>
+              <button className="modal-btn danger" onClick={confirmDelete}>确认删除</button>
             </div>
           </div>
         </div>

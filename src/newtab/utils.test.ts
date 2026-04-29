@@ -86,37 +86,55 @@ describe('findNodeById', () => {
 })
 
 describe('getRecentBookmarks', () => {
-  it('返回最近的书签，按 dateAdded 降序', () => {
+  const now = Date.now()
+  const dayMs = 24 * 60 * 60 * 1000
+
+  it('返回最近30天内的书签，按 dateAdded 降序', () => {
     const tree: BookmarkNode[] = [
       { id: '0', title: '', children: [
-        { id: 'a', title: 'Old', url: 'https://old.com', dateAdded: 1000 },
-        { id: 'b', title: 'New', url: 'https://new.com', dateAdded: 3000 },
-        { id: 'c', title: 'Mid', url: 'https://mid.com', dateAdded: 2000 },
+        { id: 'a', title: 'Old', url: 'https://old.com', dateAdded: now - 35 * dayMs },
+        { id: 'b', title: 'New', url: 'https://new.com', dateAdded: now - 5 * dayMs },
+        { id: 'c', title: 'Mid', url: 'https://mid.com', dateAdded: now - 15 * dayMs },
       ]},
     ]
-    const results = getRecentBookmarks(tree, 2)
+    const results = getRecentBookmarks(tree, 1)
     expect(results.map(r => r.id)).toEqual(['b', 'c'])
   })
 
-  it('dateAdded 缺失时视为 0', () => {
+  it('支持自定义月数范围', () => {
     const tree: BookmarkNode[] = [
       { id: '0', title: '', children: [
-        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: 500 },
+        { id: 'a', title: 'VeryOld', url: 'https://old.com', dateAdded: now - 95 * dayMs },
+        { id: 'b', title: 'Old', url: 'https://a.com', dateAdded: now - 35 * dayMs },
+        { id: 'c', title: 'New', url: 'https://b.com', dateAdded: now - 5 * dayMs },
+      ]},
+    ]
+    const r1 = getRecentBookmarks(tree, 1)
+    expect(r1.map(r => r.id)).toEqual(['c'])
+
+    const r3 = getRecentBookmarks(tree, 3)
+    expect(r3.map(r => r.id)).toEqual(['c', 'b'])
+  })
+
+  it('dateAdded 缺失时视为最近，包含在结果中', () => {
+    const tree: BookmarkNode[] = [
+      { id: '0', title: '', children: [
+        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: now - 5 * dayMs },
         { id: 'b', title: 'B', url: 'https://b.com' },
       ]},
     ]
-    const results = getRecentBookmarks(tree, 10)
-    expect(results[0].id).toBe('a')
+    const results = getRecentBookmarks(tree)
+    expect(results.map(r => r.id).sort()).toEqual(['a', 'b'].sort())
   })
 
   it('不返回文件夹节点', () => {
     const tree: BookmarkNode[] = [
       { id: '0', title: '', children: [
         { id: 'f', title: 'Folder', children: [] },
-        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: 100 },
+        { id: 'a', title: 'A', url: 'https://a.com', dateAdded: now - 2 * dayMs },
       ]},
     ]
-    expect(getRecentBookmarks(tree, 10).length).toBe(1)
+    expect(getRecentBookmarks(tree).length).toBe(1)
   })
 })
 
