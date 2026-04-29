@@ -40,7 +40,7 @@ export default function App() {
       const folder = findNodeById(selectedFolderId, bookmarkTree)
       return folder?.title ?? '书签'
     }
-    return '全部书签'
+    return '最近添加'
   }, [searchQuery, selectedFolderId, bookmarkTree])
 
   const folderOptions = useMemo(() => getAllFolders(bookmarkTree), [bookmarkTree])
@@ -93,7 +93,7 @@ export default function App() {
           className={`pill${selectedFolderId === null && !searchQuery.trim() ? ' active' : ''}`}
           onClick={() => { setSelectedFolderId(null); setSearchQuery('') }}
         >
-          全部
+          最近
         </button>
         {displayRoots.map(f => (
           <button

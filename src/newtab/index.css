@@ -207,10 +207,17 @@ html, body, #root {
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
-.card-edit-btn {
+.card-actions {
   position: absolute;
   top: 10px;
   right: 10px;
+  display: none;
+  gap: 4px;
+}
+.bookmark-card:hover .card-actions {
+  display: flex;
+}
+.card-edit-btn, .card-delete-btn {
   width: 24px;
   height: 24px;
   border-radius: 6px;
@@ -218,17 +225,22 @@ html, body, #root {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.35);
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s, color 0.15s;
 }
-.bookmark-card:hover .card-edit-btn {
-  display: flex;
-}
 .card-edit-btn:hover {
   background: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.7);
+}
+.card-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+.card-delete-btn.confirm {
+  background: #ef4444;
+  color: #fff;
 }
 .bookmark-card:hover {
   background: rgba(255, 255, 255, 0.07);
