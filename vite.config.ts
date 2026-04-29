@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     crx({ manifest }),
   ],
+  server: {
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  },
 })

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "watch": "vite build --watch",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -15,6 +16,9 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zustand": "^5.0.12"
+  },
+  "overrides": {
+    "rollup": "2.80.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.4.0",
