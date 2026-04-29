@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { getAllBookmarks, getAllFolders, getOrCreateFolder, moveBookmark } from '../lib/bookmarks'
-import { classifyBookmarks } from '../lib/classifier'
-import type { BookmarkItem } from '../lib/classifier'
 import { PROVIDERS, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
+import { organizeAllBookmarks, type OrganizeProgress } from '../lib/organize'
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'no-key'
 
@@ -13,70 +11,16 @@ export default function App() {
 
   async function handleOrganizeAll() {
     console.log('[SmartBookmark] 点击一键整理')
-
-    const result = await chrome.storage.sync.get(['activeProvider', 'activeModel', 'apiKeys'])
-    const providerId: ProviderId = (result.activeProvider as ProviderId) ?? DEFAULT_PROVIDER
-    const apiKeys = (result.apiKeys as Partial<Record<ProviderId, string>>) ?? {}
-    const apiKey = apiKeys[providerId] ?? ''
-    const model = (result.activeModel as string) ?? ''
-
-    if (!apiKey || !model) {
-      console.warn('[SmartBookmark] 未配置 API Key 或模型，已终止')
-      setStatus('no-key')
-      return
-    }
-
-    const config = { providerId, apiKey, model }
-    console.log('[SmartBookmark] 当前配置:', { provider: providerId, model })
     setStatus('loading')
     setProgress({ done: 0, total: 0 })
-
-    try {
-      const rawBookmarks = await getAllBookmarks()
-      const folders = await getAllFolders()
-      const folderNames = Object.keys(folders)
-      console.log('[SmartBookmark] 书签总数:', rawBookmarks.length, '现有文件夹数:', folderNames.length)
-
-      const uncategorized: BookmarkItem[] = rawBookmarks.map(b => ({
-        id: b.id,
-        title: b.title ?? '',
-        url: b.url ?? '',
-      }))
-
-      setProgress({ done: 0, total: uncategorized.length })
-
-      // 切分批次，3 批并发
-      const batchSize = 20
-      const concurrency = 3
-      const batches: BookmarkItem[][] = []
-      for (let i = 0; i < uncategorized.length; i += batchSize) {
-        batches.push(uncategorized.slice(i, i + batchSize))
-      }
-      console.log(`[SmartBookmark] 共 ${batches.length} 批，每批最多 ${batchSize} 条，并发数 ${concurrency}`)
-
-      for (let i = 0; i < batches.length; i += concurrency) {
-        const chunk = batches.slice(i, i + concurrency)
-        console.log(`[SmartBookmark] 处理批次 ${i / concurrency + 1}，共 ${chunk.length} 个并发请求`)
-        const chunkResults = await Promise.all(
-          chunk.map(batch => classifyBookmarks(config, batch, folderNames))
-        )
-        for (const results of chunkResults) {
-          for (const r of results) {
-            console.log(`[SmartBookmark] 移动书签 id=${r.bookmarkId} →「${r.folderName}」`)
-            const folderId = await getOrCreateFolder(r.folderName)
-            console.log(`[SmartBookmark] 目标文件夹 id=${folderId}，执行 move`)
-            await moveBookmark(r.bookmarkId, folderId)
-            setProgress(p => ({ ...p, done: p.done + 1 }))
-          }
-        }
-      }
-
-      console.log('[SmartBookmark] 整理完成，共处理', uncategorized.length, '个书签')
-      setStatus('success')
-    } catch (err) {
-      console.error('[SmartBookmark] 整理失败:', err)
-      setErrorMsg(err instanceof Error ? err.message : '未知错误')
+    const result = await organizeAllBookmarks((p: OrganizeProgress) => setProgress(p))
+    if (result.status === 'no-key') {
+      setStatus('no-key')
+    } else if (result.status === 'error') {
+      setErrorMsg(result.error ?? '未知错误')
       setStatus('error')
+    } else {
+      setStatus('success')
     }
   }
 
