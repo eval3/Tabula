@@ -20,9 +20,10 @@ interface Props {
   onLongPress?: (pos: { x: number; y: number }) => void
   isDragging?: boolean
   isExiting?: boolean
+  isDimmed?: boolean
 }
 
-export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress, isDragging, isExiting }: Props) {
+export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress, isDragging, isExiting, isDimmed }: Props) {
   const url = bookmark.url ?? ''
   const longPress = useLongPress((pos) => onLongPress?.(pos))
   const [editing, setEditing] = useState(false)
@@ -78,11 +79,12 @@ export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress
     'bookmark-card',
     isDragging ? 'bookmark-card--dragging' : '',
     isExiting ? 'bookmark-card--exiting' : '',
+    isDimmed ? 'bookmark-card--dimmed' : '',
   ].filter(Boolean).join(' ')
 
   return (
     <>
-      <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown}>
+      <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown} data-bookmark-id={bookmark.id}>
         <div className="card-actions">
           <button className="card-edit-btn" onClick={openEdit} title="编辑书签">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

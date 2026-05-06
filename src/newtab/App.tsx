@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import BookmarkCard from './components/BookmarkCard'
 import OrganizeFAB from './components/OrganizeFAB'
 import {
@@ -34,6 +34,9 @@ export default function App() {
   const [pillDraggingId, setPillDraggingId] = useState<string | null>(null)
   const [pillGhost, setPillGhost] = useState<{ title: string; x: number; y: number } | null>(null)
   const [pillDropGapIndex, setPillDropGapIndex] = useState<number | null>(null)
+  const [reorderDragId, setReorderDragId] = useState<string | null>(null)
+  const [reorderInsertIdx, setReorderInsertIdx] = useState<number | null>(null)
+  const [reorderBaseList, setReorderBaseList] = useState<BookmarkNode[] | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -43,6 +46,11 @@ export default function App() {
   const pillGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
   const pillDropGapRef = useRef<number | null>(null)
   const pillDragOriginalGapRef = useRef<number | null>(null)
+  const reorderDragIdRef = useRef<string | null>(null)
+  const reorderInsertIdxRef = useRef<number | null>(null)
+  const reorderBaseListRef = useRef<BookmarkNode[] | null>(null)
+  const reorderParentIdRef = useRef<string | null>(null)
+  const capturedRectsRef = useRef<Map<string, DOMRect>>(new Map())
 
   async function loadTree() {
     const tree = await chrome.bookmarks.getTree()
@@ -77,6 +85,17 @@ export default function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [pillEditMode])
+
+  // Re-capture card rects after every slot position change so calcReorderInsertIdx
+  // always works against current visual positions (not stale pre-shift coords).
+  useLayoutEffect(() => {
+    if (!reorderDragId) return
+    const map = new Map<string, DOMRect>()
+    document.querySelectorAll<HTMLElement>('[data-bookmark-id]').forEach(el => {
+      map.set(el.dataset.bookmarkId!, el.getBoundingClientRect())
+    })
+    capturedRectsRef.current = map
+  }, [reorderInsertIdx, reorderDragId])
 
   function startPillLongPress(_id: string) {
     longPressTimer.current = setTimeout(() => setPillEditMode(true), 600)
@@ -175,10 +194,75 @@ export default function App() {
     dragRef.current = initial
     setDrag(initial)
 
+    // Enable reorder mode in folder view: use the dragged bookmark's actual parent folder
+    if (selectedFolderId) {
+      const dragParentId = bookmarkParentMap.get(bookmarkId)
+      if (dragParentId) {
+        // Capture original card rects BEFORE React re-renders (all siblings still in DOM)
+        const initRects = new Map<string, DOMRect>()
+        document.querySelectorAll<HTMLElement>('[data-bookmark-id]').forEach(el => {
+          initRects.set(el.dataset.bookmarkId!, el.getBoundingClientRect())
+        })
+        capturedRectsRef.current = initRects
+
+        const parentFolder = findNodeById(dragParentId, bookmarkTree)
+        const siblings = parentFolder?.children?.filter(c => !!c.url) ?? []
+        const origIdx = siblings.findIndex(b => b.id === bookmarkId)
+        reorderBaseListRef.current = siblings
+        reorderDragIdRef.current = bookmarkId
+        reorderParentIdRef.current = dragParentId
+        reorderInsertIdxRef.current = origIdx
+        setReorderBaseList(siblings)
+        setReorderDragId(bookmarkId)
+        setReorderInsertIdx(origIdx)
+      }
+    }
+
+    function calcReorderInsertIdx(clientX: number, clientY: number): number {
+      const rectsMap = capturedRectsRef.current
+      const baseList = reorderBaseListRef.current
+      if (!rectsMap || !baseList) return 0
+
+      // Build ordered non-dragged sibling rects from the latest captured positions
+      const nonDragged = baseList
+        .filter(b => b.id !== bookmarkId)
+        .map(b => rectsMap.get(b.id))
+        .filter((r): r is DOMRect => !!r)
+
+      if (nonDragged.length === 0) return 0
+
+      // Direct hit: cursor inside a card rect → left half = before, right half = after
+      for (let i = 0; i < nonDragged.length; i++) {
+        const r = nonDragged[i]
+        if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+          return clientX < r.left + r.width / 2 ? i : i + 1
+        }
+      }
+
+      // Gap between cards: find nearest row then resolve by X
+      const rowCenters = nonDragged.map(r => (r.top + r.bottom) / 2)
+      const halfH = (nonDragged[0].bottom - nonDragged[0].top) / 2 + 10
+      const closestRowY = rowCenters.reduce((best, cy) =>
+        Math.abs(cy - clientY) < Math.abs(best - clientY) ? cy : best
+      , rowCenters[0])
+      const rowIdxs = rowCenters.map((_, i) => i).filter(i => Math.abs(rowCenters[i] - closestRowY) < halfH)
+      for (const i of rowIdxs) {
+        if (clientX < nonDragged[i].left + nonDragged[i].width / 2) return i
+      }
+      return (rowIdxs[rowIdxs.length - 1] ?? -1) + 1
+    }
+
     function onMove(e: MouseEvent) {
       const updated = { ...dragRef.current!, x: e.clientX, y: e.clientY }
       dragRef.current = updated
       setDrag(updated)
+      if (reorderDragIdRef.current) {
+        const newIdx = calcReorderInsertIdx(e.clientX, e.clientY)
+        if (newIdx !== reorderInsertIdxRef.current) {
+          reorderInsertIdxRef.current = newIdx
+          setReorderInsertIdx(newIdx)
+        }
+      }
     }
 
     function onUp(_e: MouseEvent) {
@@ -190,8 +274,31 @@ export default function App() {
       const target = dropFolderRef.current
       dropFolderRef.current = null
       setDropFolderId(null)
+
+      const drId = reorderDragIdRef.current
+      const insertIdx = reorderInsertIdxRef.current
+      const origList = reorderBaseListRef.current
+      const reorderParentId = reorderParentIdRef.current
+      reorderDragIdRef.current = null
+      reorderInsertIdxRef.current = null
+      reorderBaseListRef.current = null
+      reorderParentIdRef.current = null
+      setReorderDragId(null)
+      setReorderInsertIdx(null)
+      setReorderBaseList(null)
+
       if (id && target) {
         doMove(id, target.id, target.title)
+      } else if (drId && origList && insertIdx !== null && reorderParentId) {
+        const withoutDrag = origList.filter(b => b.id !== drId)
+        const dragged = origList.find(b => b.id === drId)!
+        const newOrder = [...withoutDrag]
+        newOrder.splice(insertIdx, 0, dragged)
+        const origIds = origList.map(b => b.id).join(',')
+        const newIds = newOrder.map(b => b.id).join(',')
+        if (origIds !== newIds) {
+          syncReorderedBookmark(drId, newOrder, reorderParentId).then(() => loadTree())
+        }
       }
     }
 
@@ -210,6 +317,20 @@ export default function App() {
       toastTimer.current = setTimeout(() => setMoveToast(null), 2500)
     }, 250)
   }
+
+  const bookmarkParentMap = useMemo(() => {
+    const map = new Map<string, string>()
+    function walk(nodes: BookmarkNode[]) {
+      for (const node of nodes) {
+        if (node.children) {
+          for (const child of node.children) map.set(child.id, node.id)
+          walk(node.children)
+        }
+      }
+    }
+    walk(bookmarkTree)
+    return map
+  }, [bookmarkTree])
 
   const displayRoots = useMemo(() => getDisplayRoots(bookmarkTree), [bookmarkTree])
 
@@ -419,7 +540,36 @@ export default function App() {
       </div>
 
       <div className="card-grid">
-        {bookmarksWithFolder.length === 0 ? (
+        {reorderDragId && reorderBaseList ? (
+          // Reorder mode: only show direct-sibling bookmarks with a drop slot
+          (() => {
+            const nonDragged = reorderBaseList
+              .filter(b => b.id !== reorderDragId)
+              .map(b => ({
+                ...b,
+                folderName: showFullPath
+                  ? getBookmarkPath(b.id, bookmarkTree)
+                  : findFolderName(b.id, bookmarkTree),
+              }))
+            const els: React.ReactNode[] = []
+            nonDragged.forEach((b, i) => {
+              if (reorderInsertIdx === i) els.push(<div key="drop-slot" className="card-drop-slot" />)
+              els.push(
+                <BookmarkCard
+                  key={b.id}
+                  bookmark={b}
+                  folders={folderOptions}
+                  onUpdated={loadTree}
+                  onLongPress={(pos) => startDrag(b.id, b.title, pos)}
+                  isDragging={false}
+                  isExiting={exitingId === b.id}
+                />
+              )
+            })
+            if (reorderInsertIdx === nonDragged.length) els.push(<div key="drop-slot" className="card-drop-slot" />)
+            return els
+          })()
+        ) : bookmarksWithFolder.length === 0 ? (
           <div className="empty-state">
             {searchQuery.trim() ? '没有匹配的书签' : '暂无书签'}
           </div>
@@ -433,6 +583,10 @@ export default function App() {
               onLongPress={(pos) => startDrag(b.id, b.title, pos)}
               isDragging={drag?.bookmarkId === b.id}
               isExiting={exitingId === b.id}
+              isDimmed={
+                !!drag && !reorderDragId &&
+                bookmarkParentMap.get(b.id) !== bookmarkParentMap.get(drag.bookmarkId)
+              }
             />
           ))
         )}
@@ -465,6 +619,36 @@ export default function App() {
       )}
     </div>
   )
+}
+
+async function syncReorderedBookmark(
+  draggedId: string,
+  newOrder: BookmarkNode[],
+  parentId: string
+) {
+  const newIdx = newOrder.findIndex(b => b.id === draggedId)
+  const children = await chrome.bookmarks.getChildren(parentId)
+  const draggedPos = children.findIndex(c => c.id === draggedId)
+  if (draggedPos < 0) return
+
+  let targetIdx: number
+
+  if (newIdx === 0) {
+    if (newOrder.length < 2) return
+    const nextId = newOrder[1].id
+    const nextPos = children.findIndex(c => c.id === nextId)
+    if (nextPos < 0 || draggedPos < nextPos) return
+    targetIdx = nextPos
+  } else {
+    const prevId = newOrder[newIdx - 1].id
+    const prevPos = children.findIndex(c => c.id === prevId)
+    if (prevPos < 0) return
+    targetIdx = draggedPos < prevPos ? prevPos : prevPos + 1
+  }
+
+  if (targetIdx !== draggedPos) {
+    await chrome.bookmarks.move(draggedId, { parentId, index: targetIdx })
+  }
 }
 
 async function syncFolderOrderToChrome(newOrder: { id: string }[], tree: BookmarkNode[]) {
