@@ -93,7 +93,18 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
         {bookmark.folderName && (
           <div className="card-folder-tag">
             <span className="folder-dot" style={{ backgroundColor: dotColor }} />
-            <span className="folder-tag-name">{bookmark.folderName}</span>
+            <div className="breadcrumb">
+              {bookmark.folderName.split('/').map((crumb, i, arr) => (
+                <span key={i} className="breadcrumb-item">
+                  {i > 0 && (
+                    <svg className="breadcrumb-sep" width="8" height="12" viewBox="4 2 16 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 6 15 12 9 18" />
+                    </svg>
+                  )}
+                  <span className={`breadcrumb-crumb${i === arr.length - 1 ? ' leaf' : ''}`}>{crumb}</span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -177,7 +188,7 @@ function Favicon({ url }: { url: string }) {
   return (
     <img
       className="card-favicon"
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=32`}
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`}
       alt=""
       onError={() => setError(true)}
     />
