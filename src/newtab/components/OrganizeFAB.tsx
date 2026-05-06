@@ -37,7 +37,7 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
         {isLoading ? (
           <span className="fab-progress">{progress.done}/{progress.total}</span>
         ) : (
-          <span className="fab-icon">✨</span>
+          <span className="fab-icon">✦</span>
         )}
       </button>
     </div>
