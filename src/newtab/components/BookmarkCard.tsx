@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { BookmarkNode } from '../utils'
+import { useLongPress } from '../hooks/useLongPress'
 
 const PALETTE = ['#a855f7', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6']
 
@@ -16,10 +17,14 @@ interface Props {
   bookmark: BookmarkNode & { folderName?: string }
   folders: BookmarkNode[]
   onUpdated: () => void
+  onLongPress?: (pos: { x: number; y: number }) => void
+  isDragging?: boolean
+  isExiting?: boolean
 }
 
-export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
+export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress, isDragging, isExiting }: Props) {
   const url = bookmark.url ?? ''
+  const longPress = useLongPress((pos) => onLongPress?.(pos))
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(bookmark.title)
   const [editFolderId, setEditFolderId] = useState<string>('')
@@ -29,6 +34,7 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
   try { hostname = new URL(url).hostname } catch {}
 
   function handleClick(e: React.MouseEvent) {
+    if (longPress.wasLongPressed()) return
     if ((e.target as HTMLElement).closest('.card-actions')) return
     if (url) window.open(url, '_blank')
   }
@@ -68,9 +74,15 @@ export default function BookmarkCard({ bookmark, folders, onUpdated }: Props) {
     onUpdated()
   }
 
+  const cardClass = [
+    'bookmark-card',
+    isDragging ? 'bookmark-card--dragging' : '',
+    isExiting ? 'bookmark-card--exiting' : '',
+  ].filter(Boolean).join(' ')
+
   return (
     <>
-      <div className="bookmark-card" onClick={handleClick}>
+      <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown}>
         <div className="card-actions">
           <button className="card-edit-btn" onClick={openEdit} title="编辑书签">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

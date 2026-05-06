@@ -142,6 +142,96 @@ html, body, #root {
   font-weight: 600;
 }
 
+/* ── Pill wrapper (for long-press close btn) ── */
+.pill-wrapper {
+  position: relative;
+  display: inline-flex;
+  max-width: 300px;
+  overflow: visible;
+}
+.pill-close-btn {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.15s, transform 0.15s;
+  animation: pill-close-in 0.15s ease;
+}
+.pill-close-btn:hover {
+  background: #dc2626;
+  transform: scale(1.15);
+}
+@keyframes pill-close-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.pill-wrapper--dragging .pill {
+  opacity: 0;
+}
+.pill-wrapper--dragging .pill-close-btn {
+  display: none;
+}
+.pill--edit {
+  cursor: grab;
+}
+.app--pill-dragging, .app--pill-dragging * {
+  cursor: grabbing !important;
+}
+.pill-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  padding: 7px 18px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(255,122,60,0.5), 0 4px 12px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%) scale(1.1);
+  animation: pill-ghost-in 0.1s ease;
+}
+@keyframes pill-ghost-in {
+  from { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+  to   { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+}
+.pill-wrapper {
+  transition: margin 0.12s ease, max-width 0.15s ease;
+}
+.pill-wrapper--gap-before { margin-left:  44px; }
+.pill-wrapper--gap-after  { margin-right: 44px; }
+.pill-wrapper--collapsed {
+  max-width: 0 !important;
+  overflow: hidden;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+@keyframes pill-wobble {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(-3deg); }
+  40%  { transform: rotate(3deg); }
+  60%  { transform: rotate(-3deg); }
+  80%  { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+.pill--edit {
+  animation: pill-wobble 0.8s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
 /* ── Section header ── */
 .section-header {
   width: 100%;
@@ -308,6 +398,7 @@ html, body, #root {
   border-radius: 14px;
   padding: 20px;
   cursor: pointer;
+  user-select: none;
   transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 .card-actions {
@@ -641,6 +732,83 @@ html, body, #root {
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.95) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Drag ghost ── */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  background: rgba(255,122,60,0.12);
+  border: 1.5px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 8px 32px rgba(255,122,60,0.35);
+  backdrop-filter: blur(8px);
+  transform: rotate(2deg);
+}
+
+/* Grab cursor while dragging */
+.app--dragging, .app--dragging * {
+  cursor: grabbing !important;
+}
+
+/* ── Move toast ── */
+.move-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 10, 35, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 300;
+  animation: toast-in 0.2s ease;
+}
+
+/* ── Pills receive mode ── */
+.pills-row--receive {
+  position: relative;
+  z-index: 20;
+  pointer-events: all;
+}
+.pill--receive {
+  border-color: rgba(255,122,60,0.4);
+  color: rgba(255,122,60,0.75);
+  transition: all 0.15s;
+}
+.pill--drop-active {
+  background: rgba(255,122,60,0.25) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(255,122,60,0.3);
+}
+
+/* ── Card dragging / exiting state ── */
+.bookmark-card--dragging {
+  opacity: 0.35;
+  border-color: var(--accent-border) !important;
+  pointer-events: none;
+}
+.bookmark-card--exiting {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
 }
 
 /* ── Scrollbar ── */

@@ -8,6 +8,13 @@ import {
 } from './utils'
 import { organizeAllBookmarks, type OrganizeStatus, type OrganizeProgress } from '../lib/organize'
 
+interface DragState {
+  bookmarkId: string
+  title: string
+  x: number
+  y: number
+}
+
 export default function App() {
   const [bookmarkTree, setBookmarkTree] = useState<BookmarkNode[]>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
@@ -17,7 +24,25 @@ export default function App() {
   const [showFullPath, setShowFullPath] = useState(false)
   const [recentMonths, setRecentMonths] = useState(1)
   const [recentOpen, setRecentOpen] = useState(false)
+  const [drag, setDrag] = useState<DragState | null>(null)
+  const [dropFolderId, setDropFolderId] = useState<string | null>(null)
+  const [exitingId, setExitingId] = useState<string | null>(null)
+  const [moveToast, setMoveToast] = useState<string | null>(null)
+  const [pillEditMode, setPillEditMode] = useState(false)
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<{ id: string; title: string } | null>(null)
+  const [pillOrder, setPillOrder] = useState<string[]>([])
+  const [pillDraggingId, setPillDraggingId] = useState<string | null>(null)
+  const [pillGhost, setPillGhost] = useState<{ title: string; x: number; y: number } | null>(null)
+  const [pillDropGapIndex, setPillDropGapIndex] = useState<number | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragRef = useRef<DragState | null>(null)
+  const dropFolderRef = useRef<{ id: string; title: string } | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pillDragIdRef = useRef<string | null>(null)
+  const pillGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
+  const pillDropGapRef = useRef<number | null>(null)
+  const pillDragOriginalGapRef = useRef<number | null>(null)
 
   async function loadTree() {
     const tree = await chrome.bookmarks.getTree()
@@ -25,6 +50,12 @@ export default function App() {
   }
 
   useEffect(() => { loadTree() }, [])
+
+  useEffect(() => {
+    chrome.storage.local.get('pillOrder', (data) => {
+      if (Array.isArray(data.pillOrder)) setPillOrder(data.pillOrder)
+    })
+  }, [])
 
   useEffect(() => {
     if (!recentOpen) return
@@ -37,7 +68,160 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [recentOpen])
 
+  useEffect(() => {
+    if (!pillEditMode) return
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (!target.closest('.pill-wrapper')) setPillEditMode(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [pillEditMode])
+
+  function startPillLongPress(_id: string) {
+    longPressTimer.current = setTimeout(() => setPillEditMode(true), 600)
+  }
+
+  function cancelPillLongPress() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
+  async function handleDeleteFolder() {
+    if (!deleteFolderTarget) return
+    await chrome.bookmarks.removeTree(deleteFolderTarget.id)
+    if (selectedFolderId === deleteFolderTarget.id) setSelectedFolderId(null)
+    setDeleteFolderTarget(null)
+    setPillEditMode(false)
+    await loadTree()
+  }
+
+  function startPillDragReorder(e: React.MouseEvent, id: string, title: string, currentOrder: { id: string }[]) {
+    e.preventDefault()
+    pillDragIdRef.current = id
+    setPillDraggingId(id)
+    // original gap = index of dragged pill in non-dragging array = its index in currentOrder
+    pillDragOriginalGapRef.current = currentOrder.findIndex(f => f.id === id)
+    const ghost = { title, x: e.clientX, y: e.clientY }
+    pillGhostRef.current = ghost
+    setPillGhost(ghost)
+
+    function calcGapIndex(clientX: number, clientY: number): number {
+      const wrappers = Array.from(
+        document.querySelectorAll<HTMLElement>('.pill-wrapper:not(.pill-wrapper--dragging)')
+      )
+      if (wrappers.length === 0) return 0
+      const rects = wrappers.map(el => el.getBoundingClientRect())
+
+      // Find the row whose vertical center is closest to clientY
+      const rowCenters = rects.map(r => (r.top + r.bottom) / 2)
+      const closestRowY = rowCenters.reduce((best, cy) =>
+        Math.abs(cy - clientY) < Math.abs(best - clientY) ? cy : best
+      , rowCenters[0])
+
+      // Collect indices of pills on that row
+      const rowIndices = wrappers
+        .map((_, i) => i)
+        .filter(i => Math.abs(rowCenters[i] - closestRowY) < 20)
+
+      // Find gap position within that row by X
+      for (const i of rowIndices) {
+        if (clientX < rects[i].left + rects[i].width / 2) return i
+      }
+      return rowIndices[rowIndices.length - 1] + 1
+    }
+
+    function onMove(ev: MouseEvent) {
+      const updated = { title, x: ev.clientX, y: ev.clientY }
+      pillGhostRef.current = updated
+      setPillGhost(updated)
+      const raw = calcGapIndex(ev.clientX, ev.clientY)
+      // suppress gap indicator when at original position
+      const gap = raw === pillDragOriginalGapRef.current ? null : raw
+      if (gap !== pillDropGapRef.current) {
+        pillDropGapRef.current = gap
+        setPillDropGapIndex(gap)
+      }
+    }
+
+    async function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      const sourceId = pillDragIdRef.current
+      const gapIdx = pillDropGapRef.current
+      const originalGap = pillDragOriginalGapRef.current
+      pillDragIdRef.current = null
+      pillDropGapRef.current = null
+      pillDragOriginalGapRef.current = null
+      pillGhostRef.current = null
+      setPillDraggingId(null)
+      setPillGhost(null)
+      setPillDropGapIndex(null)
+      if (!sourceId || gapIdx === null || gapIdx === originalGap) return
+      const withoutSource = currentOrder.filter(f => f.id !== sourceId).map(f => f.id)
+      const newIds = [...withoutSource]
+      newIds.splice(gapIdx, 0, sourceId)
+      setPillOrder(newIds)
+      chrome.storage.local.set({ pillOrder: newIds })
+      await syncFolderOrderToChrome(newIds.map(id => ({ id })), bookmarkTree)
+      await loadTree()
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  function startDrag(bookmarkId: string, title: string, pos: { x: number; y: number }) {
+    const initial: DragState = { bookmarkId, title, x: pos.x, y: pos.y }
+    dragRef.current = initial
+    setDrag(initial)
+
+    function onMove(e: MouseEvent) {
+      const updated = { ...dragRef.current!, x: e.clientX, y: e.clientY }
+      dragRef.current = updated
+      setDrag(updated)
+    }
+
+    function onUp(_e: MouseEvent) {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      const id = dragRef.current?.bookmarkId ?? null
+      dragRef.current = null
+      setDrag(null)
+      const target = dropFolderRef.current
+      dropFolderRef.current = null
+      setDropFolderId(null)
+      if (id && target) {
+        doMove(id, target.id, target.title)
+      }
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  async function doMove(bookmarkId: string, folderId: string, folderTitle: string) {
+    setExitingId(bookmarkId)
+    setTimeout(async () => {
+      await chrome.bookmarks.move(bookmarkId, { parentId: folderId })
+      setExitingId(null)
+      await loadTree()
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      setMoveToast(`已移入「${folderTitle}」`)
+      toastTimer.current = setTimeout(() => setMoveToast(null), 2500)
+    }, 250)
+  }
+
   const displayRoots = useMemo(() => getDisplayRoots(bookmarkTree), [bookmarkTree])
+
+  const sortedDisplayRoots = useMemo(() => {
+    if (!pillOrder.length) return displayRoots
+    const orderMap = new Map(pillOrder.map((id, i) => [id, i]))
+    return [...displayRoots].sort((a, b) => {
+      const ai = orderMap.has(a.id) ? orderMap.get(a.id)! : displayRoots.indexOf(a) + pillOrder.length
+      const bi = orderMap.has(b.id) ? orderMap.get(b.id)! : displayRoots.indexOf(b) + pillOrder.length
+      return ai - bi
+    })
+  }, [displayRoots, pillOrder])
 
   const displayedBookmarks = useMemo(() => {
     if (searchQuery.trim()) return searchBookmarks(searchQuery, bookmarkTree)
@@ -80,7 +264,29 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${drag ? ' app--dragging' : ''}${pillDraggingId ? ' app--pill-dragging' : ''}`}>
+      {moveToast && (
+        <div className="move-toast">{moveToast}</div>
+      )}
+
+      {drag && (
+        <div
+          className="drag-ghost"
+          style={{ left: drag.x + 14, top: drag.y + 14 }}
+        >
+          {drag.title || '书签'}
+        </div>
+      )}
+
+      {pillGhost && (
+        <div
+          className="pill-drag-ghost"
+          style={{ left: pillGhost.x, top: pillGhost.y }}
+        >
+          {pillGhost.title}
+        </div>
+      )}
+
       <div className="app-header">
         <img src="/icons/logo.png" className="app-logo" alt="" />
         <h1 className="app-title">Smart Bookmark</h1>
@@ -104,21 +310,70 @@ export default function App() {
         </div>
       </div>
 
-      <div className="pills-row">
+      <div className={`pills-row${drag ? ' pills-row--receive' : ''}`}>
         <button
           className={`pill${selectedFolderId === null && !searchQuery.trim() ? ' active' : ''}`}
           onClick={() => { setSelectedFolderId(null); setSearchQuery('') }}
         >
           最近
         </button>
-        {displayRoots.map(f => (
-          <button
+        {sortedDisplayRoots.map((f, i) => (
+          <div
             key={f.id}
-            className={`pill${selectedFolderId === f.id ? ' active' : ''}`}
-            onClick={() => { setSelectedFolderId(f.id); setSearchQuery('') }}
+            className={[
+              'pill-wrapper',
+              pillDraggingId === f.id ? 'pill-wrapper--dragging' : '',
+              pillDraggingId === f.id && pillDropGapIndex !== null ? 'pill-wrapper--collapsed' : '',
+              (() => {
+                if (pillDropGapIndex === null || pillDraggingId === f.id) return ''
+                const ndPills = sortedDisplayRoots.filter(r => r.id !== pillDraggingId)
+                const ndIdx = ndPills.findIndex(r => r.id === f.id)
+                if (ndIdx === -1) return ''
+                if (pillDropGapIndex === ndIdx) return 'pill-wrapper--gap-before'
+                if (pillDropGapIndex === ndIdx + 1) return 'pill-wrapper--gap-after'
+                return ''
+              })(),
+            ].filter(Boolean).join(' ')}
+            onMouseEnter={() => {
+              if (drag) { setDropFolderId(f.id); dropFolderRef.current = { id: f.id, title: f.title } }
+            }}
+            onMouseLeave={() => {
+              if (drag) { setDropFolderId(null); dropFolderRef.current = null }
+            }}
           >
-            {f.title}
-          </button>
+            <button
+              className={[
+                'pill',
+                selectedFolderId === f.id ? 'active' : '',
+                drag ? 'pill--receive' : '',
+                dropFolderId === f.id ? 'pill--drop-active' : '',
+                pillEditMode ? 'pill--edit' : '',
+              ].filter(Boolean).join(' ')}
+              style={pillEditMode ? { animationDelay: `${(i % 3) * 0.07}s` } : undefined}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return
+                if (pillEditMode) {
+                  startPillDragReorder(e, f.id, f.title, sortedDisplayRoots)
+                } else if (!drag) {
+                  startPillLongPress(f.id)
+                }
+              }}
+              onMouseUp={() => { if (!pillEditMode) cancelPillLongPress() }}
+              onClick={() => {
+                if (!drag && !pillEditMode) { setSelectedFolderId(f.id); setSearchQuery('') }
+              }}
+            >
+              {f.title}
+            </button>
+            {pillEditMode && (
+              <button
+                className="pill-close-btn"
+                onClick={(e) => { e.stopPropagation(); setDeleteFolderTarget({ id: f.id, title: f.title }) }}
+              >
+                ×
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
@@ -170,7 +425,15 @@ export default function App() {
           </div>
         ) : (
           bookmarksWithFolder.map(b => (
-            <BookmarkCard key={b.id} bookmark={b} folders={folderOptions} onUpdated={loadTree} />
+            <BookmarkCard
+              key={b.id}
+              bookmark={b}
+              folders={folderOptions}
+              onUpdated={loadTree}
+              onLongPress={(pos) => startDrag(b.id, b.title, pos)}
+              isDragging={drag?.bookmarkId === b.id}
+              isExiting={exitingId === b.id}
+            />
           ))
         )}
       </div>
@@ -180,8 +443,67 @@ export default function App() {
         progress={organizeProgress}
         onOrganize={handleOrganize}
       />
+
+      {deleteFolderTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteFolderTarget(null)}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>删除文件夹</h3>
+              <button className="modal-close" onClick={() => setDeleteFolderTarget(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-confirm-text">
+                确定要删除文件夹 <strong>「{deleteFolderTarget.title}」</strong> 及其所有书签吗？此操作不可撤销。
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => setDeleteFolderTarget(null)}>取消</button>
+              <button className="modal-btn danger" onClick={handleDeleteFolder}>删除</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+async function syncFolderOrderToChrome(newOrder: { id: string }[], tree: BookmarkNode[]) {
+  // Build folderId -> parentId map
+  const parentMap = new Map<string, string>()
+  function buildMap(nodes: BookmarkNode[], parentId: string) {
+    for (const node of nodes) {
+      parentMap.set(node.id, parentId)
+      if (node.children) buildMap(node.children, node.id)
+    }
+  }
+  for (const root of tree) buildMap(root.children ?? [], root.id)
+
+  // Group new order by parent
+  const byParent = new Map<string, string[]>()
+  for (const f of newOrder) {
+    const pid = parentMap.get(f.id)
+    if (!pid) continue
+    if (!byParent.has(pid)) byParent.set(pid, [])
+    byParent.get(pid)!.push(f.id)
+  }
+
+  // Reorder within each parent: move each item right after the previous one
+  for (const [parentId, desiredOrder] of byParent) {
+    for (let i = 0; i < desiredOrder.length; i++) {
+      if (i === 0) {
+        const children = await chrome.bookmarks.getChildren(parentId)
+        const desiredSet = new Set(desiredOrder)
+        const minIdx = children.findIndex(c => desiredSet.has(c.id))
+        await chrome.bookmarks.move(desiredOrder[0], { parentId, index: minIdx })
+      } else {
+        const children = await chrome.bookmarks.getChildren(parentId)
+        const prevIdx = children.findIndex(c => c.id === desiredOrder[i - 1])
+        if (prevIdx >= 0) {
+          await chrome.bookmarks.move(desiredOrder[i], { parentId, index: prevIdx + 1 })
+        }
+      }
+    }
+  }
 }
 
 function findFolderName(bookmarkId: string, tree: BookmarkNode[]): string | undefined {
