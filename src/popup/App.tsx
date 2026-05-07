@@ -24,7 +24,7 @@ export default function App() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.logo}>🔖</span>
+        <img src="/icons/logo.png" style={styles.logo} alt="" />
         <h1 style={styles.title}>Smart Bookmark</h1>
       </div>
 
@@ -50,14 +50,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      <button
-        style={{ ...styles.button, opacity: status === 'loading' ? 0.6 : 1 }}
-        onClick={handleOrganizeAll}
-        disabled={status === 'loading'}
-      >
-        {status === 'loading' ? '整理中...' : '一键智能整理书签'}
-      </button>
 
       <div style={styles.hint}>
         快捷键收藏当前页：<kbd style={styles.kbd}>Alt+Shift+S</kbd>
@@ -95,7 +87,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   header: { display: 'flex', alignItems: 'center', gap: 8 },
-  logo: { fontSize: 22 },
+  logo: { width: 24, height: 24 },
   title: { fontSize: 15, fontWeight: 700, color: '#1a1a1a' },
   badge: {
     background: '#f0f0ff',
