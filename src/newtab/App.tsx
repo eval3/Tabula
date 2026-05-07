@@ -37,6 +37,8 @@ export default function App() {
   const [reorderDragId, setReorderDragId] = useState<string | null>(null)
   const [reorderInsertIdx, setReorderInsertIdx] = useState<number | null>(null)
   const [reorderBaseList, setReorderBaseList] = useState<BookmarkNode[] | null>(null)
+  const [showAddFolderModal, setShowAddFolderModal] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -103,6 +105,15 @@ export default function App() {
 
   function cancelPillLongPress() {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
+  async function handleAddFolder() {
+    const name = newFolderName.trim()
+    if (!name) return
+    await chrome.bookmarks.create({ title: name })
+    setNewFolderName('')
+    setShowAddFolderModal(false)
+    await loadTree()
   }
 
   async function handleDeleteFolder() {
@@ -498,6 +509,18 @@ export default function App() {
             )}
           </div>
         ))}
+        {!pillEditMode && (
+          <button
+            className="pill-add-btn"
+            onClick={() => setShowAddFolderModal(true)}
+            title="新建文件夹"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="section-header">
@@ -599,6 +622,33 @@ export default function App() {
         progress={organizeProgress}
         onOrganize={handleOrganize}
       />
+
+      {showAddFolderModal && (
+        <div className="modal-overlay" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>新建文件夹</h3>
+              <button className="modal-close" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>×</button>
+            </div>
+            <div className="modal-body">
+              <label className="modal-label">文件夹名称</label>
+              <input
+                className="modal-input"
+                type="text"
+                placeholder="请输入文件夹名称"
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddFolder() }}
+                autoFocus
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>取消</button>
+              <button className="modal-btn save" onClick={handleAddFolder} disabled={!newFolderName.trim()}>创建</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteFolderTarget && (
         <div className="modal-overlay" onClick={() => setDeleteFolderTarget(null)}>
