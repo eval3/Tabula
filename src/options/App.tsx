@@ -5,14 +5,12 @@ import { t } from '../lib/i18n'
 interface StorageData {
   activeProvider: ProviderId
   activeModel: string
-  autoClassify: boolean
   apiKeys: Partial<Record<ProviderId, string>>
 }
 
 const DEFAULT_DATA: StorageData = {
   activeProvider: DEFAULT_PROVIDER,
   activeModel: 'deepseek-v4-pro',
-  autoClassify: true,
   apiKeys: {},
 }
 
@@ -37,12 +35,11 @@ export default function OptionsApp() {
 
   useEffect(() => {
     chrome.storage.sync.get(
-      ['activeProvider', 'activeModel', 'autoClassify', 'apiKeys'],
+      ['activeProvider', 'activeModel', 'apiKeys'],
       (result) => {
         setData({
           activeProvider: (result.activeProvider as ProviderId) ?? DEFAULT_PROVIDER,
           activeModel: (result.activeModel as string) ?? 'deepseek-v4-pro',
-          autoClassify: result.autoClassify !== false,
           apiKeys: (result.apiKeys as Partial<Record<ProviderId, string>>) ?? {},
         })
       }
@@ -210,30 +207,18 @@ export default function OptionsApp() {
 
         <section style={s.section}>
           <h2 style={s.sectionTitle}>{t('sectionBehavior')}</h2>
-          <label style={s.toggleRow}>
-            <div>
-              <div style={s.label}>{t('autoClassifyLabel')}</div>
-              <div style={s.hint}>{t('autoClassifyHint')}</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={data.autoClassify}
-              onChange={e => {
-                const newData = { ...data, autoClassify: e.target.checked }
-                setData(newData)
-                chrome.storage.sync.set(newData)
-              }}
-              style={s.checkbox}
-            />
-          </label>
-
-          <div style={{ marginTop: 12 }}>
+          <div>
             <div style={s.label}>{t('shortcutLabel')}</div>
-            <div style={{ ...s.hint, marginTop: 4 }}>
-              {t('shortcutDescLabel')}<ShortcutKeys shortcut={shortcut} kbdStyle={s.kbd} />
-            </div>
-            <div style={{ ...s.hint, marginTop: 2 }}>
-              {t('shortcutCustomizeHint')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              <div style={s.hint}>
+                {t('shortcutDescLabel')}<ShortcutKeys shortcut={shortcut} kbdStyle={s.kbd} />
+              </div>
+              <button
+                style={s.shortcutBtn}
+                onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
+              >
+                {t('shortcutCustomizeBtn')}
+              </button>
             </div>
           </div>
         </section>
@@ -371,15 +356,18 @@ const s: Record<string, React.CSSProperties> = {
     background: '#fff',
   },
   hint: { fontSize: 12, color: '#9ca3af' },
-  link: { color: '#4f46e5', textDecoration: 'none' },
-  toggleRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  shortcutBtn: {
+    fontSize: 12,
+    color: '#4b5563',
+    background: '#f3f4f6',
+    border: '1px solid #e5e7eb',
+    borderRadius: 6,
+    padding: '3px 10px',
     cursor: 'pointer',
-    gap: 12,
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
-  checkbox: { width: 18, height: 18, cursor: 'pointer', flexShrink: 0 },
+  link: { color: '#4f46e5', textDecoration: 'none' },
   kbd: {
     background: '#f3f4f6',
     border: '1px solid #d1d5db',
