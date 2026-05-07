@@ -110,10 +110,15 @@ export default function App() {
   async function handleAddFolder() {
     const name = newFolderName.trim()
     if (!name) return
-    await chrome.bookmarks.create({ title: name })
-    setNewFolderName('')
-    setShowAddFolderModal(false)
-    await loadTree()
+    try {
+      const barId = getBookmarksBarId(bookmarkTree)
+      await chrome.bookmarks.create({ title: name, parentId: barId })
+      setNewFolderName('')
+      setShowAddFolderModal(false)
+      await loadTree()
+    } catch (err) {
+      console.error('创建文件夹失败:', err)
+    }
   }
 
   async function handleDeleteFolder() {
@@ -740,6 +745,17 @@ async function syncFolderOrderToChrome(newOrder: { id: string }[], tree: Bookmar
       }
     }
   }
+}
+
+function getBookmarksBarId(tree: BookmarkNode[]): string {
+  for (const root of tree) {
+    for (const child of root.children ?? []) {
+      if (child.id === '1' || child.title === 'Bookmarks bar' || child.title === '书签栏') {
+        return child.id
+      }
+    }
+  }
+  return '1'
 }
 
 function findFolderName(bookmarkId: string, tree: BookmarkNode[]): string | undefined {
