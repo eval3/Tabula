@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { PROVIDER_LIST, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
 import { t } from '../lib/i18n'
+import {
+  getBookmarkSnapshots,
+  saveBookmarkSnapshot,
+  deleteBookmarkSnapshot,
+  restoreBookmarkSnapshot,
+  type BookmarkSnapshot,
+} from '../lib/bookmarks'
 
 interface StorageData {
   activeProvider: ProviderId
@@ -20,6 +27,12 @@ export default function OptionsApp() {
   const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
   const [addKey, setAddKey] = useState('')
   const [shortcut, setShortcut] = useState('Alt+Shift+S')
+  const [snapshots, setSnapshots] = useState<BookmarkSnapshot[]>([])
+  const [savingSnapshot, setSavingSnapshot] = useState(false)
+  const [snapshotSavedId, setSnapshotSavedId] = useState<string | null>(null)
+  const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [restoredId, setRestoredId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchShortcut = () => {
@@ -51,6 +64,34 @@ export default function OptionsApp() {
       selectProvider(providersWithKey[0].id)
     }
   }, [data.apiKeys])
+
+  useEffect(() => {
+    getBookmarkSnapshots().then(setSnapshots)
+  }, [])
+
+  async function handleSaveSnapshot() {
+    setSavingSnapshot(true)
+    const snapshot = await saveBookmarkSnapshot()
+    const updated = await getBookmarkSnapshots()
+    setSnapshots(updated)
+    setSavingSnapshot(false)
+    setSnapshotSavedId(snapshot.id)
+    setTimeout(() => setSnapshotSavedId(null), 2000)
+  }
+
+  async function handleRestoreSnapshot(snapshot: BookmarkSnapshot) {
+    setRestoringId(snapshot.id)
+    setConfirmRestoreId(null)
+    await restoreBookmarkSnapshot(snapshot)
+    setRestoringId(null)
+    setRestoredId(snapshot.id)
+    setTimeout(() => setRestoredId(null), 2000)
+  }
+
+  async function handleDeleteSnapshot(id: string) {
+    await deleteBookmarkSnapshot(id)
+    setSnapshots(prev => prev.filter(s => s.id !== id))
+  }
 
   async function selectProvider(providerId: ProviderId) {
     const provider = PROVIDER_LIST.find(p => p.id === providerId)!
@@ -221,6 +262,66 @@ export default function OptionsApp() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section style={s.section}>
+          <h2 style={s.sectionTitle}>{t('sectionBackup')}</h2>
+          <div>
+            <button
+              style={{ ...s.backupBtn, ...(savingSnapshot ? s.backupBtnDisabled : {}) }}
+              onClick={handleSaveSnapshot}
+              disabled={savingSnapshot}
+            >
+              {savingSnapshot ? t('savingSnapshot') : snapshotSavedId && snapshots[0]?.id === snapshotSavedId ? t('snapshotSaved') : t('saveSnapshotBtn')}
+            </button>
+          </div>
+          {snapshots.length === 0 ? (
+            <div style={s.hint}>{t('noSnapshots')}</div>
+          ) : (
+            <div style={s.snapshotList}>
+              {snapshots.map(snap => (
+                <div key={snap.id} style={s.snapshotItem}>
+                  <div style={s.snapshotInfo}>
+                    <span style={s.snapshotTime}>{formatTimestamp(snap.timestamp)}</span>
+                    <span style={s.snapshotCount}>{t('snapshotBookmarkCount').replace('{count}', String(snap.bookmarkCount))}</span>
+                  </div>
+                  {confirmRestoreId === snap.id ? (
+                    <div style={s.confirmRow}>
+                      <span style={s.restoreWarning}>{t('restoreWarning')}</span>
+                      <button
+                        style={s.confirmRestoreBtn}
+                        onClick={() => handleRestoreSnapshot(snap)}
+                      >
+                        {t('confirmRestoreBtn')}
+                      </button>
+                      <button
+                        style={s.cancelBtn}
+                        onClick={() => setConfirmRestoreId(null)}
+                      >
+                        {t('cancelRestoreBtn')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={s.snapshotActions}>
+                      <button
+                        style={{ ...s.restoreBtn, ...(restoringId === snap.id ? s.backupBtnDisabled : {}) }}
+                        onClick={() => setConfirmRestoreId(snap.id)}
+                        disabled={!!restoringId}
+                      >
+                        {restoringId === snap.id ? t('restoringSnapshot') : restoredId === snap.id ? t('snapshotRestored') : t('restoreSnapshotBtn')}
+                      </button>
+                      <button
+                        style={s.deleteSnapshotBtn}
+                        onClick={() => handleDeleteSnapshot(snap.id)}
+                      >
+                        {t('deleteSnapshotBtn')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
       </div>
@@ -399,6 +500,109 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     padding: 0,
   },
+  backupBtn: {
+    background: '#4f46e5',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  backupBtnDisabled: {
+    background: '#c7c7e8',
+    cursor: 'not-allowed',
+  },
+  snapshotList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 8,
+    marginTop: 4,
+  },
+  snapshotItem: {
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: '10px 12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  snapshotInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  snapshotTime: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: 500,
+  },
+  snapshotCount: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  snapshotActions: {
+    display: 'flex',
+    gap: 6,
+  },
+  restoreBtn: {
+    background: '#fff',
+    color: '#4f46e5',
+    border: '1px solid #4f46e5',
+    borderRadius: 6,
+    padding: '4px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  deleteSnapshotBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#9ca3af',
+    fontSize: 12,
+    cursor: 'pointer',
+    padding: '4px 6px',
+  },
+  confirmRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  restoreWarning: {
+    fontSize: 12,
+    color: '#b45309',
+    flex: 1,
+  },
+  confirmRestoreBtn: {
+    background: '#ef4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    padding: '4px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+  cancelBtn: {
+    background: '#f3f4f6',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 12,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+}
+
+function formatTimestamp(ts: number): string {
+  const d = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function splitShortcut(shortcut: string): string[] {
