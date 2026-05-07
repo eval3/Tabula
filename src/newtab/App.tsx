@@ -792,6 +792,7 @@ export default function App() {
                   key={b.id}
                   bookmark={b}
                   folders={folderOptions}
+                  tree={bookmarkTree}
                   onUpdated={loadTree}
                   onLongPress={(pos) => startDrag(b.id, b.title, pos)}
                   isDragging={false}
@@ -813,6 +814,7 @@ export default function App() {
               key={b.id}
               bookmark={b}
               folders={folderOptions}
+              tree={bookmarkTree}
               onUpdated={loadTree}
               onLongPress={(pos) => startDrag(b.id, b.title, pos)}
               isDragging={drag?.bookmarkId === b.id}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { BookmarkNode } from '../utils'
 import { useLongPress } from '../hooks/useLongPress'
 
@@ -16,6 +16,7 @@ function hashCode(s: string): number {
 interface Props {
   bookmark: BookmarkNode & { folderName?: string }
   folders: BookmarkNode[]
+  tree: BookmarkNode[]
   onUpdated: () => void
   onLongPress?: (pos: { x: number; y: number }) => void
   isDragging?: boolean
@@ -23,13 +24,15 @@ interface Props {
   isDimmed?: boolean
 }
 
-export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress, isDragging, isExiting, isDimmed }: Props) {
+export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLongPress, isDragging, isExiting, isDimmed }: Props) {
   const url = bookmark.url ?? ''
   const longPress = useLongPress((pos) => onLongPress?.(pos))
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(bookmark.title)
   const [editFolderId, setEditFolderId] = useState<string>('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showFolderPicker, setShowFolderPicker] = useState(false)
+  const [pickerRect, setPickerRect] = useState<DOMRect | null>(null)
 
   let hostname = url
   try { hostname = new URL(url).hostname } catch {}
@@ -69,6 +72,22 @@ export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress
     setShowDeleteModal(true)
   }
 
+  function handleTagClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setPickerRect(rect)
+    setShowFolderPicker(true)
+  }
+
+  async function handlePickerSelect(folderId: string) {
+    setShowFolderPicker(false)
+    const currentParentId = findParentFolderId(bookmark.id, folders)
+    if (folderId !== currentParentId) {
+      await chrome.bookmarks.move(bookmark.id, { parentId: folderId })
+      onUpdated()
+    }
+  }
+
   async function confirmDelete() {
     await chrome.bookmarks.remove(bookmark.id)
     setShowDeleteModal(false)
@@ -105,7 +124,7 @@ export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress
         </div>
         <div className="card-title">{bookmark.title || url}</div>
         {bookmark.folderName && (
-          <div className="card-folder-tag">
+          <div className="card-folder-tag card-folder-tag--clickable" onClick={handleTagClick}>
             <span className="folder-dot" style={{ backgroundColor: dotColor }} />
             <div className="breadcrumb">
               {bookmark.folderName.split('/').map((crumb, i, arr) => (
@@ -122,6 +141,16 @@ export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress
           </div>
         )}
       </div>
+
+      {showFolderPicker && pickerRect && (
+        <FolderTreePicker
+          tree={tree}
+          currentFolderId={findParentFolderId(bookmark.id, folders)}
+          anchorRect={pickerRect}
+          onSelect={handlePickerSelect}
+          onClose={() => setShowFolderPicker(false)}
+        />
+      )}
 
       {editing && (
         <div className="modal-overlay" onClick={() => setEditing(false)}>
@@ -178,6 +207,139 @@ export default function BookmarkCard({ bookmark, folders, onUpdated, onLongPress
           </div>
         </div>
       )}
+    </>
+  )
+}
+
+const SYS_IDS = new Set(['0', '1', '2', '3'])
+const SYS_TITLES = new Set(['书签栏', '其他书签', '移动设备书签', 'Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks'])
+
+function FolderTreePicker({
+  tree,
+  currentFolderId,
+  anchorRect,
+  onSelect,
+  onClose,
+}: {
+  tree: BookmarkNode[]
+  currentFolderId: string
+  anchorRect: DOMRect
+  onSelect: (id: string) => void
+  onClose: () => void
+}) {
+  const [selectedId, setSelectedId] = useState(currentFolderId)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  const initialExpanded = useMemo(() => {
+    function findAncestors(targetId: string, nodes: BookmarkNode[]): string[] | null {
+      for (const node of nodes) {
+        if (node.id === targetId) return []
+        if (node.children) {
+          const sub = findAncestors(targetId, node.children)
+          if (sub !== null) return [node.id, ...sub]
+        }
+      }
+      return null
+    }
+    const ancestors = findAncestors(currentFolderId, tree) ?? []
+    return new Set(ancestors.filter(id => !SYS_IDS.has(id)))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const effectiveExpanded = expanded.size > 0 ? expanded : initialExpanded
+
+  function toggleExpand(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setExpanded(prev => {
+      const base = prev.size > 0 ? prev : initialExpanded
+      const next = new Set(base)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function handleRowClick(node: BookmarkNode, hasSubs: boolean, e: React.MouseEvent) {
+    e.stopPropagation()
+    setSelectedId(node.id)
+    if (hasSubs) {
+      setExpanded(prev => {
+        const base = prev.size > 0 ? prev : initialExpanded
+        const next = new Set(base)
+        next.has(node.id) ? next.delete(node.id) : next.add(node.id)
+        return next
+      })
+    }
+  }
+
+  function renderNodes(nodes: BookmarkNode[], depth: number): React.ReactNode[] {
+    const result: React.ReactNode[] = []
+    for (const node of nodes) {
+      if (node.url) continue
+      const isSys = SYS_IDS.has(node.id) || SYS_TITLES.has(node.title)
+      if (isSys) {
+        if (node.title) {
+          result.push(<div key={`sec-${node.id}`} className="folder-picker-section">{node.title}</div>)
+        }
+        if (node.children) result.push(...renderNodes(node.children, depth))
+        continue
+      }
+      const hasSubs = (node.children ?? []).some(c => !c.url)
+      const isOpen = effectiveExpanded.has(node.id)
+      const isSelected = node.id === selectedId
+      result.push(
+        <div
+          key={node.id}
+          className={`folder-picker-row${isSelected ? ' folder-picker-row--current' : ''}`}
+          style={{ paddingLeft: 8 + depth * 14 }}
+          onClick={(e) => handleRowClick(node, hasSubs, e)}
+        >
+          <button
+            className="folder-picker-chevron"
+            style={{ visibility: hasSubs ? 'visible' : 'hidden' }}
+            onClick={(e) => toggleExpand(node.id, e)}
+          >
+            {isOpen ? '▾' : '▸'}
+          </button>
+          <span className="folder-picker-name">{node.title}</span>
+          {isSelected && <span className="folder-picker-check">✓</span>}
+        </div>
+      )
+      if (isOpen && node.children) {
+        result.push(...renderNodes(node.children, depth + 1))
+      }
+    }
+    return result
+  }
+
+  const pickerW = 250, pickerH = 320
+  const top = anchorRect.bottom + 4 + pickerH > window.innerHeight
+    ? Math.max(4, anchorRect.top - pickerH - 4)
+    : anchorRect.bottom + 4
+  const left = anchorRect.left + pickerW > window.innerWidth
+    ? Math.max(4, anchorRect.right - pickerW)
+    : anchorRect.left
+
+  return (
+    <>
+      <div className="folder-picker-overlay" onClick={(e) => { e.stopPropagation(); onClose() }} />
+      <div
+        className="folder-picker"
+        style={{ position: 'fixed', top, left, width: pickerW, maxHeight: pickerH, zIndex: 9999 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="folder-picker-header">
+          <span>移动到</span>
+          <button
+            className="folder-picker-confirm"
+            onClick={() => onSelect(selectedId)}
+          >
+            确定
+          </button>
+        </div>
+        <div className="folder-picker-scroll">
+          {renderNodes(tree, 0)}
+        </div>
+      </div>
     </>
   )
 }
