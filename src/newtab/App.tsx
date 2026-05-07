@@ -39,11 +39,17 @@ export default function App() {
   const [reorderBaseList, setReorderBaseList] = useState<BookmarkNode[] | null>(null)
   const [showAddFolderModal, setShowAddFolderModal] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [subFolderNavStack, setSubFolderNavStack] = useState<string[]>([])
+  const [subFolderEditMode, setSubFolderEditMode] = useState(false)
+  const [deleteSubFolderTarget, setDeleteSubFolderTarget] = useState<{ id: string; title: string } | null>(null)
+  const [showAddSubFolderModal, setShowAddSubFolderModal] = useState(false)
+  const [newSubFolderName, setNewSubFolderName] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const dropFolderRef = useRef<{ id: string; title: string } | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const subLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pillDragIdRef = useRef<string | null>(null)
   const pillGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
   const pillDropGapRef = useRef<number | null>(null)
@@ -88,6 +94,23 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [pillEditMode])
 
+  useEffect(() => {
+    setSubFolderNavStack([])
+    setSubFolderEditMode(false)
+  }, [selectedFolderId])
+
+  useEffect(() => {
+    if (!subFolderEditMode) return
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (!target.closest('.subfolder-tab-wrapper') && !target.closest('.subfolder-tab-add-btn')) {
+        setSubFolderEditMode(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [subFolderEditMode])
+
   // Re-capture card rects after every slot position change so calcReorderInsertIdx
   // always works against current visual positions (not stale pre-shift coords).
   useLayoutEffect(() => {
@@ -105,6 +128,37 @@ export default function App() {
 
   function cancelPillLongPress() {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
+  function startSubTabLongPress() {
+    subLongPressTimer.current = setTimeout(() => setSubFolderEditMode(true), 600)
+  }
+
+  function cancelSubTabLongPress() {
+    if (subLongPressTimer.current) { clearTimeout(subLongPressTimer.current); subLongPressTimer.current = null }
+  }
+
+  async function handleDeleteSubFolder() {
+    if (!deleteSubFolderTarget) return
+    await chrome.bookmarks.removeTree(deleteSubFolderTarget.id)
+    const idx = subFolderNavStack.indexOf(deleteSubFolderTarget.id)
+    if (idx !== -1) setSubFolderNavStack(s => s.slice(0, idx))
+    setDeleteSubFolderTarget(null)
+    setSubFolderEditMode(false)
+    await loadTree()
+  }
+
+  async function handleAddSubFolder() {
+    const name = newSubFolderName.trim()
+    if (!name || !currentViewFolderId) return
+    try {
+      await chrome.bookmarks.create({ title: name, parentId: currentViewFolderId })
+      setNewSubFolderName('')
+      setShowAddSubFolderModal(false)
+      await loadTree()
+    } catch (err) {
+      console.error('创建子文件夹失败:', err)
+    }
   }
 
   async function handleAddFolder() {
@@ -210,6 +264,10 @@ export default function App() {
     dragRef.current = initial
     setDrag(initial)
 
+    let currentClientX = pos.x
+    let currentClientY = pos.y
+    let scrollRafId: number | null = null
+
     // Enable reorder mode in folder view
     if (selectedFolderId) {
       const dragParentId = bookmarkParentMap.get(bookmarkId)
@@ -264,7 +322,43 @@ export default function App() {
       return null
     }
 
+    function runAutoScroll() {
+      const THRESHOLD = 120
+      const MAX_SPEED = 18
+      const viewH = window.innerHeight
+      let speed = 0
+
+      if (currentClientY < THRESHOLD) {
+        speed = -MAX_SPEED * (1 - currentClientY / THRESHOLD)
+      } else if (currentClientY > viewH - THRESHOLD) {
+        speed = MAX_SPEED * (1 - (viewH - currentClientY) / THRESHOLD)
+      }
+
+      if (speed !== 0) {
+        window.scrollBy(0, speed)
+        // Re-capture rects after scroll so calcReorderInsertIdx stays accurate
+        if (reorderDragIdRef.current) {
+          const map = new Map<string, DOMRect>()
+          document.querySelectorAll<HTMLElement>('[data-bookmark-id]').forEach(el => {
+            map.set(el.dataset.bookmarkId!, el.getBoundingClientRect())
+          })
+          capturedRectsRef.current = map
+          const newIdx = calcReorderInsertIdx(currentClientX, currentClientY)
+          if (newIdx !== null && newIdx !== reorderInsertIdxRef.current) {
+            reorderInsertIdxRef.current = newIdx
+            setReorderInsertIdx(newIdx)
+          }
+        }
+      }
+
+      scrollRafId = requestAnimationFrame(runAutoScroll)
+    }
+
+    scrollRafId = requestAnimationFrame(runAutoScroll)
+
     function onMove(e: MouseEvent) {
+      currentClientX = e.clientX
+      currentClientY = e.clientY
       const updated = { ...dragRef.current!, x: e.clientX, y: e.clientY }
       dragRef.current = updated
       setDrag(updated)
@@ -280,6 +374,10 @@ export default function App() {
     function onUp(_e: MouseEvent) {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
+      if (scrollRafId !== null) {
+        cancelAnimationFrame(scrollRafId)
+        scrollRafId = null
+      }
       const id = dragRef.current?.bookmarkId ?? null
       dragRef.current = null
       setDrag(null)
@@ -362,23 +460,43 @@ export default function App() {
     })
   }, [displayRoots, pillOrder])
 
+  const currentViewFolderId = subFolderNavStack.at(-1) ?? selectedFolderId
+
+  const subFolders = useMemo(() => {
+    if (!currentViewFolderId) return []
+    const folder = findNodeById(currentViewFolderId, bookmarkTree)
+    if (!folder) return []
+    return (folder.children ?? []).filter(n => !n.url)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentViewFolderId, bookmarkTree])
+
   const displayedBookmarks = useMemo(() => {
     if (searchQuery.trim()) return searchBookmarks(searchQuery, bookmarkTree)
     if (selectedFolderId) {
-      const folder = findNodeById(selectedFolderId, bookmarkTree)
+      const folder = findNodeById(currentViewFolderId!, bookmarkTree)
       return folder ? getAllBookmarksInFolder(folder) : []
     }
     return getRecentBookmarks(bookmarkTree, recentMonths)
-  }, [searchQuery, bookmarkTree, selectedFolderId, recentMonths])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths])
 
   const sectionTitle = useMemo(() => {
     if (searchQuery.trim()) return `搜索"${searchQuery}"`
-    if (selectedFolderId) {
-      const folder = findNodeById(selectedFolderId, bookmarkTree)
-      return folder?.title ?? '书签'
+    if (!selectedFolderId) return '最近添加'
+    return null
+  }, [searchQuery, selectedFolderId])
+
+  const breadcrumbParts = useMemo(() => {
+    if (!selectedFolderId) return []
+    const parts: { id: string; title: string }[] = []
+    const root = findNodeById(selectedFolderId, bookmarkTree)
+    if (root) parts.push({ id: selectedFolderId, title: root.title })
+    for (const id of subFolderNavStack) {
+      const node = findNodeById(id, bookmarkTree)
+      if (node) parts.push({ id, title: node.title })
     }
-    return '最近添加'
-  }, [searchQuery, selectedFolderId, bookmarkTree])
+    return parts
+  }, [selectedFolderId, subFolderNavStack, bookmarkTree])
 
   const isRecentView = !searchQuery.trim() && !selectedFolderId
 
@@ -529,7 +647,27 @@ export default function App() {
       </div>
 
       <div className="section-header">
-        <h2 className="section-title">{sectionTitle}</h2>
+        <h2 className="section-title">
+          {breadcrumbParts.length > 0 ? (
+            <span className="breadcrumb-row">
+              {breadcrumbParts.map((part, i) => (
+                <span key={part.id} className="breadcrumb-item">
+                  {i > 0 && <span className="breadcrumb-sep">›</span>}
+                  {i < breadcrumbParts.length - 1 ? (
+                    <button
+                      className="breadcrumb-part"
+                      onClick={() => setSubFolderNavStack(subFolderNavStack.slice(0, i))}
+                    >
+                      {part.title}
+                    </button>
+                  ) : (
+                    <span className="breadcrumb-current">{part.title}</span>
+                  )}
+                </span>
+              ))}
+            </span>
+          ) : sectionTitle}
+        </h2>
         <label className="path-toggle">
           <input
             type="checkbox"
@@ -567,7 +705,64 @@ export default function App() {
             )}
           </div>
         )}
+        {selectedFolderId && !subFolderEditMode && (
+          <button
+            className="subfolder-tab-add-btn section-add-btn"
+            onClick={() => setShowAddSubFolderModal(true)}
+            title="在当前文件夹下新建子文件夹"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        )}
       </div>
+
+      {selectedFolderId && (
+        <div className="subfolder-tabs">
+          {subFolders.map((f, i) => (
+            <div
+              key={f.id}
+              className={`subfolder-tab-wrapper${subFolderEditMode ? ' subfolder-tab-wrapper--edit' : ''}`}
+              onMouseEnter={() => {
+                if (drag) { setDropFolderId(f.id); dropFolderRef.current = { id: f.id, title: f.title } }
+              }}
+              onMouseLeave={() => {
+                if (drag) { setDropFolderId(null); dropFolderRef.current = null }
+              }}
+            >
+              <button
+                className={[
+                  'subfolder-tab',
+                  subFolderEditMode ? 'subfolder-tab--edit' : '',
+                  dropFolderId === f.id ? 'subfolder-tab--drop-active' : '',
+                ].filter(Boolean).join(' ')}
+                style={subFolderEditMode ? { animationDelay: `${(i % 3) * 0.07}s` } : undefined}
+                onMouseDown={() => { if (!subFolderEditMode) startSubTabLongPress() }}
+                onMouseUp={() => { if (!subFolderEditMode) cancelSubTabLongPress() }}
+                onMouseLeave={() => cancelSubTabLongPress()}
+                onClick={() => {
+                  if (!subFolderEditMode) {
+                    setSubFolderNavStack(s => [...s, f.id])
+                    setSubFolderEditMode(false)
+                  }
+                }}
+              >
+                {f.title}
+              </button>
+              {subFolderEditMode && (
+                <button
+                  className="subfolder-tab-close-btn"
+                  onClick={(e) => { e.stopPropagation(); setDeleteSubFolderTarget({ id: f.id, title: f.title }) }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card-grid">
         {reorderDragId && reorderBaseList ? (
@@ -581,9 +776,17 @@ export default function App() {
                   ? getBookmarkPath(b.id, bookmarkTree)
                   : findFolderName(b.id, bookmarkTree),
               }))
+            // Drop slot is only valid within the same-folder block
+            const sameIdxs = nonDragged
+              .map((b, i) => bookmarkParentMap.get(b.id) === reorderParentIdRef.current ? i : -1)
+              .filter(i => i >= 0)
+            const firstSame = sameIdxs.length > 0 ? sameIdxs[0] : -1
+            const lastSame  = sameIdxs.length > 0 ? sameIdxs[sameIdxs.length - 1] : -1
+            const slotVisible = (idx: number) =>
+              firstSame >= 0 && idx >= firstSame && idx <= lastSame + 1
             const els: React.ReactNode[] = []
             nonDragged.forEach((b, i) => {
-              if (reorderInsertIdx === i) els.push(<div key="drop-slot" className="card-drop-slot" />)
+              if (reorderInsertIdx === i && slotVisible(i)) els.push(<div key="drop-slot" className="card-drop-slot" />)
               els.push(
                 <BookmarkCard
                   key={b.id}
@@ -593,10 +796,11 @@ export default function App() {
                   onLongPress={(pos) => startDrag(b.id, b.title, pos)}
                   isDragging={false}
                   isExiting={exitingId === b.id}
+                  isDimmed={bookmarkParentMap.get(b.id) !== reorderParentIdRef.current}
                 />
               )
             })
-            if (reorderInsertIdx === nonDragged.length) els.push(<div key="drop-slot" className="card-drop-slot" />)
+            if (reorderInsertIdx === nonDragged.length && slotVisible(nonDragged.length)) els.push(<div key="drop-slot" className="card-drop-slot" />)
             return els
           })()
         ) : bookmarksWithFolder.length === 0 ? (
@@ -670,6 +874,53 @@ export default function App() {
             <div className="modal-footer">
               <button className="modal-btn cancel" onClick={() => setDeleteFolderTarget(null)}>取消</button>
               <button className="modal-btn danger" onClick={handleDeleteFolder}>删除</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddSubFolderModal && (
+        <div className="modal-overlay" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>新建子文件夹</h3>
+              <button className="modal-close" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>×</button>
+            </div>
+            <div className="modal-body">
+              <label className="modal-label">文件夹名称</label>
+              <input
+                className="modal-input"
+                type="text"
+                placeholder="请输入文件夹名称"
+                value={newSubFolderName}
+                onChange={e => setNewSubFolderName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddSubFolder() }}
+                autoFocus
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>取消</button>
+              <button className="modal-btn save" onClick={handleAddSubFolder} disabled={!newSubFolderName.trim()}>创建</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSubFolderTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteSubFolderTarget(null)}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>删除子文件夹</h3>
+              <button className="modal-close" onClick={() => setDeleteSubFolderTarget(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-confirm-text">
+                确定要删除文件夹 <strong>「{deleteSubFolderTarget.title}」</strong> 及其所有书签吗？此操作不可撤销。
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => setDeleteSubFolderTarget(null)}>取消</button>
+              <button className="modal-btn danger" onClick={handleDeleteSubFolder}>删除</button>
             </div>
           </div>
         </div>
