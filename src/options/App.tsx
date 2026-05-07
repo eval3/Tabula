@@ -22,6 +22,19 @@ export default function OptionsApp() {
   const [page, setPage] = useState<'main' | 'add'>('main')
   const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
   const [addKey, setAddKey] = useState('')
+  const [shortcut, setShortcut] = useState('Alt+Shift+S')
+
+  useEffect(() => {
+    const fetchShortcut = () => {
+      chrome.commands.getAll((commands) => {
+        const cmd = commands.find(c => c.name === 'classify-and-bookmark')
+        if (cmd?.shortcut) setShortcut(cmd.shortcut)
+      })
+    }
+    fetchShortcut()
+    window.addEventListener('focus', fetchShortcut)
+    return () => window.removeEventListener('focus', fetchShortcut)
+  }, [])
 
   useEffect(() => {
     chrome.storage.sync.get(
@@ -215,7 +228,7 @@ export default function OptionsApp() {
           <div style={{ marginTop: 12 }}>
             <div style={s.label}>{t('shortcutLabel')}</div>
             <div style={{ ...s.hint, marginTop: 4 }}>
-              {t('shortcutDescLabel')}<kbd style={s.kbd}>Alt+Shift+S</kbd>
+              {t('shortcutDescLabel')}<ShortcutKeys shortcut={shortcut} kbdStyle={s.kbd} />
             </div>
             <div style={{ ...s.hint, marginTop: 2 }}>
               {t('shortcutCustomizeHint')}
@@ -403,4 +416,23 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     padding: 0,
   },
+}
+
+function splitShortcut(shortcut: string): string[] {
+  if (shortcut.includes('+')) return shortcut.split('+')
+  return [...shortcut]
+}
+
+function ShortcutKeys({ shortcut, kbdStyle }: { shortcut: string; kbdStyle: React.CSSProperties }) {
+  const keys = splitShortcut(shortcut)
+  return (
+    <>
+      {keys.map((key, i) => (
+        <span key={i}>
+          {i > 0 && <span style={{ color: '#aaa', margin: '0 1px' }}>+</span>}
+          <kbd style={kbdStyle}>{key}</kbd>
+        </span>
+      ))}
+    </>
+  )
 }

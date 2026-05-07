@@ -1,26 +1,20 @@
 import { useState } from 'react'
 import { PROVIDERS, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
-import { organizeAllBookmarks, type OrganizeProgress, type OrganizeStatus } from '../lib/organize'
+import { type OrganizeStatus } from '../lib/organize'
 import { t } from '../lib/i18n'
 
 export default function App() {
-  const [status, setStatus] = useState<OrganizeStatus>('idle')
-  const [progress, setProgress] = useState({ done: 0, total: 0 })
-  const [errorMsg, setErrorMsg] = useState('')
+  const [status] = useState<OrganizeStatus>('idle')
+  const [progress] = useState({ done: 0, total: 0 })
+  const [errorMsg] = useState('')
+  const [shortcut, setShortcut] = useState('Alt+Shift+S')
 
-  async function handleOrganizeAll() {
-    console.log('[SmartBookmark] 点击一键整理')
-    setStatus('loading')
-    const result = await organizeAllBookmarks((p: OrganizeProgress) => setProgress(p))
-    if (result.status === 'no-key') {
-      setStatus('no-key')
-    } else if (result.status === 'error') {
-      setErrorMsg(result.error ?? '未知错误')
-      setStatus('error')
-    } else {
-      setStatus('success')
-    }
-  }
+  useState(() => {
+    chrome.commands.getAll((commands) => {
+      const cmd = commands.find(c => c.name === 'classify-and-bookmark')
+      if (cmd?.shortcut) setShortcut(cmd.shortcut)
+    })
+  })
 
   return (
     <div style={styles.container}>
@@ -53,13 +47,32 @@ export default function App() {
       )}
 
       <div style={styles.hint}>
-        {t('shortcutHint')}<kbd style={styles.kbd}>Alt+Shift+S</kbd>
+        {t('shortcutHint')}<ShortcutKeys shortcut={shortcut} kbdStyle={styles.kbd} />
       </div>
 
       <button style={styles.settingsBtn} onClick={() => chrome.runtime.openOptionsPage()}>
         {t('settingsBtn')}
       </button>
     </div>
+  )
+}
+
+function splitShortcut(shortcut: string): string[] {
+  if (shortcut.includes('+')) return shortcut.split('+')
+  return [...shortcut]
+}
+
+function ShortcutKeys({ shortcut, kbdStyle }: { shortcut: string; kbdStyle: React.CSSProperties }) {
+  const keys = splitShortcut(shortcut)
+  return (
+    <>
+      {keys.map((key, i) => (
+        <span key={i}>
+          {i > 0 && <span style={{ color: '#aaa', margin: '0 1px' }}>+</span>}
+          <kbd style={kbdStyle}>{key}</kbd>
+        </span>
+      ))}
+    </>
   )
 }
 
