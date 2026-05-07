@@ -110,7 +110,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     cursor: 'pointer',
   },
-  hint: { fontSize: 11, color: '#888', textAlign: 'center' },
+  hint: { fontSize: 11, color: '#888', textAlign: 'left' },
   kbd: {
     background: '#f0f0f0',
     border: '1px solid #ccc',
