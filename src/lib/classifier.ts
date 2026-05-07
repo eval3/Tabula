@@ -19,15 +19,16 @@ interface CallConfig {
   model: string
 }
 
-const CALL_TIMEOUT_MS = 60_000
+const SINGLE_TIMEOUT_MS = 360_000
+const BATCH_TIMEOUT_MS = 600_000
 
-async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Promise<string> {
+async function callLLM(config: CallConfig, prompt: string, maxTokens = 64, timeoutMs: number): Promise<string> {
   const provider = PROVIDERS[config.providerId]
   const tag = `[SmartBookmark] ${provider.name} / ${config.model}`
   const t0 = Date.now()
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   console.group(tag)
   console.log('prompt:', prompt)
@@ -83,8 +84,8 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
     return result
   } catch (err) {
     if (controller.signal.aborted) {
-      console.error(`timeout after ${CALL_TIMEOUT_MS / 1000}s`)
-      throw new Error(`请求超时（${CALL_TIMEOUT_MS / 1000}s）`)
+      console.error(`timeout after ${timeoutMs / 1000}s`)
+      throw new Error(`请求超时（${timeoutMs / 1000}s）`)
     }
     console.error(`failed (${Date.now() - t0}ms):`, err)
     throw err
@@ -103,19 +104,16 @@ export async function classifySingleBookmark(
   let shortUrl = url
   try { const u = new URL(url); shortUrl = u.hostname + u.pathname.replace(/\/$/, '') } catch {}
 
-  const prompt = `书签分类专家。将书签放入最合适的文件夹，只返回文件夹路径。
-
-规则：
-- 可使用现有路径，也可新建（如"前端开发/React"）
-- 用"/"表示层级，最多两级
-- 只返回路径，不要其他内容
+  const prompt = `将书签分类到文件夹，直接输出路径，不要分析过程。
 
 现有文件夹：
 ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
 
-书签：${title} | ${shortUrl}`
+书签：${title} | ${shortUrl}
 
-  const result = await callLLM(config, prompt, 2048)
+输出一个文件夹路径，最多两级（用"/"分隔），可新建文件夹，只返回路径。`
+
+  const result = await callLLM(config, prompt, 2048, SINGLE_TIMEOUT_MS)
   if (!result) throw new Error('AI 返回了空响应，请检查模型名称或 API Key 是否正确')
   return result
 }
@@ -125,24 +123,21 @@ export async function classifyBookmarks(
   bookmarks: BookmarkItem[],
   existingFolders: string[]
 ): Promise<ClassifyResult[]> {
-  const prompt = `书签分类专家。将以下书签分配到最合适的文件夹路径。
-
-规则：
-- 可使用现有路径，也可新建（如"前端开发/React"）
-- 用"/"表示层级，最多两级
-- 返回JSON数组，每项只有 folderName 字段，顺序与书签列表一致，只返回JSON数组
+  const prompt = `将书签分类到文件夹。直接输出JSON，不要分析过程。
 
 现有文件夹：
 ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
 
-书签列表：
+书签（标题 | URL）：
 ${bookmarks.map((b, i) => {
   let shortUrl = b.url
   try { const u = new URL(b.url); shortUrl = u.hostname + u.pathname.replace(/\/$/, '') } catch {}
   return `${i + 1}. ${b.title} | ${shortUrl}`
-}).join('\n')}`
+}).join('\n')}
 
-  const text = await callLLM(config, prompt, 4096)
+返回JSON数组 [{"folderName":"路径"}]，顺序与书签一致，路径最多两级，可新建文件夹，只返回JSON。`
+
+  const text = await callLLM(config, prompt, 4096, BATCH_TIMEOUT_MS)
   const jsonStr = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
 
   let raw: Array<{ folderName: string }>
