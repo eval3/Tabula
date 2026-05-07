@@ -71,5 +71,5 @@ const messages = {
   noApiKeyToast: 'Please configure API Key first',
 } as const
 
-export type Messages = typeof messages
+export type Messages = { [K in keyof typeof messages]: string }
 export default messages

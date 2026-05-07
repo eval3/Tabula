@@ -1098,21 +1098,3 @@ function getBookmarksBarId(tree: BookmarkNode[]): string {
   }
   return '1'
 }
-
-function findFolderName(bookmarkId: string, tree: BookmarkNode[]): string | undefined {
-  function walk(nodes: BookmarkNode[], parentTitle?: string): string | undefined {
-    for (const node of nodes) {
-      if (node.children) {
-        for (const child of node.children) {
-          if (child.id === bookmarkId) return node.title || parentTitle
-          if (!child.url) {
-            const found = walk([child], child.title || parentTitle)
-            if (found) return found
-          }
-        }
-      }
-    }
-    return undefined
-  }
-  return walk(tree)
-}
