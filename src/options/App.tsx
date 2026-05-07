@@ -18,7 +18,6 @@ const DEFAULT_DATA: StorageData = {
 
 export default function OptionsApp() {
   const [data, setData] = useState<StorageData>(DEFAULT_DATA)
-  const [saved, setSaved] = useState(false)
   const [page, setPage] = useState<'main' | 'add'>('main')
   const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
   const [addKey, setAddKey] = useState('')
@@ -56,19 +55,11 @@ export default function OptionsApp() {
     }
   }, [data.apiKeys])
 
-  function selectProvider(providerId: ProviderId) {
+  async function selectProvider(providerId: ProviderId) {
     const provider = PROVIDER_LIST.find(p => p.id === providerId)!
-    setData(prev => ({
-      ...prev,
-      activeProvider: providerId,
-      activeModel: provider.models[0].id,
-    }))
-  }
-
-  async function handleSave() {
-    await chrome.storage.sync.set(data)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    const newData = { ...data, activeProvider: providerId, activeModel: provider.models[0].id }
+    setData(newData)
+    await chrome.storage.sync.set(newData)
   }
 
   function openAddPage() {
@@ -79,19 +70,22 @@ export default function OptionsApp() {
     setPage('add')
   }
 
-  function handleAddKey() {
+  async function handleAddKey() {
     if (!addKey.trim()) return
-    setData(prev => ({ ...prev, apiKeys: { ...prev.apiKeys, [addTab]: addKey.trim() } }))
+    const newApiKeys = { ...data.apiKeys, [addTab]: addKey.trim() }
+    const newData = { ...data, apiKeys: newApiKeys }
+    setData(newData)
+    await chrome.storage.sync.set(newData)
     setAddKey('')
     setPage('main')
   }
 
-  function handleClearKey() {
-    setData(prev => {
-      const keys = { ...prev.apiKeys }
-      delete keys[addTab]
-      return { ...prev, apiKeys: keys }
-    })
+  async function handleClearKey() {
+    const newApiKeys = { ...data.apiKeys }
+    delete newApiKeys[addTab]
+    const newData = { ...data, apiKeys: newApiKeys }
+    setData(newData)
+    await chrome.storage.sync.set(newData)
     setAddKey('')
   }
 
@@ -198,7 +192,11 @@ export default function OptionsApp() {
                 <label style={s.label}>{t('labelModel')}</label>
                 <select
                   value={data.activeModel}
-                  onChange={e => setData(prev => ({ ...prev, activeModel: e.target.value }))}
+                  onChange={e => {
+                    const newData = { ...data, activeModel: e.target.value }
+                    setData(newData)
+                    chrome.storage.sync.set(newData)
+                  }}
                   style={s.select}
                 >
                   {activeProvider.models.map(m => (
@@ -220,7 +218,11 @@ export default function OptionsApp() {
             <input
               type="checkbox"
               checked={data.autoClassify}
-              onChange={e => setData(prev => ({ ...prev, autoClassify: e.target.checked }))}
+              onChange={e => {
+                const newData = { ...data, autoClassify: e.target.checked }
+                setData(newData)
+                chrome.storage.sync.set(newData)
+              }}
               style={s.checkbox}
             />
           </label>
@@ -236,13 +238,6 @@ export default function OptionsApp() {
           </div>
         </section>
 
-        <button
-          style={{ ...s.saveBtn, ...(!data.apiKeys[data.activeProvider] ? s.saveBtnDisabled : {}) }}
-          onClick={handleSave}
-          disabled={!data.apiKeys[data.activeProvider]}
-        >
-          {saved ? t('savedBtn') : t('saveSettingsBtn')}
-        </button>
       </div>
     </div>
   )
