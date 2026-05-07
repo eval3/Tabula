@@ -44,12 +44,19 @@ export default function App() {
   const [deleteSubFolderTarget, setDeleteSubFolderTarget] = useState<{ id: string; title: string } | null>(null)
   const [showAddSubFolderModal, setShowAddSubFolderModal] = useState(false)
   const [newSubFolderName, setNewSubFolderName] = useState('')
+  const [subTabDraggingId, setSubTabDraggingId] = useState<string | null>(null)
+  const [subTabDropGapIndex, setSubTabDropGapIndex] = useState<number | null>(null)
+  const [subTabGhost, setSubTabGhost] = useState<{ title: string; x: number; y: number } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const dropFolderRef = useRef<{ id: string; title: string } | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const subLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const subTabDragIdRef = useRef<string | null>(null)
+  const subTabGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
+  const subTabDropGapRef = useRef<number | null>(null)
+  const subTabOriginalGapRef = useRef<number | null>(null)
   const pillDragIdRef = useRef<string | null>(null)
   const pillGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
   const pillDropGapRef = useRef<number | null>(null)
@@ -136,6 +143,69 @@ export default function App() {
 
   function cancelSubTabLongPress() {
     if (subLongPressTimer.current) { clearTimeout(subLongPressTimer.current); subLongPressTimer.current = null }
+  }
+
+  function startSubTabDragReorder(e: React.MouseEvent, id: string, title: string, currentOrder: BookmarkNode[]) {
+    e.preventDefault()
+    subTabDragIdRef.current = id
+    setSubTabDraggingId(id)
+    subTabOriginalGapRef.current = currentOrder.findIndex(f => f.id === id)
+    const ghost = { title, x: e.clientX, y: e.clientY }
+    subTabGhostRef.current = ghost
+    setSubTabGhost(ghost)
+
+    function calcGapIndex(clientX: number, clientY: number): number {
+      const wrappers = Array.from(
+        document.querySelectorAll<HTMLElement>('.subfolder-tab-wrapper:not(.subfolder-tab-wrapper--dragging)')
+      )
+      if (wrappers.length === 0) return 0
+      const rects = wrappers.map(el => el.getBoundingClientRect())
+      const rowCenters = rects.map(r => (r.top + r.bottom) / 2)
+      const closestRowY = rowCenters.reduce((best, cy) =>
+        Math.abs(cy - clientY) < Math.abs(best - clientY) ? cy : best
+      , rowCenters[0])
+      const rowIndices = wrappers.map((_, i) => i).filter(i => Math.abs(rowCenters[i] - closestRowY) < 20)
+      for (const i of rowIndices) {
+        if (clientX < rects[i].left + rects[i].width / 2) return i
+      }
+      return rowIndices[rowIndices.length - 1] + 1
+    }
+
+    function onMove(ev: MouseEvent) {
+      const updated = { title, x: ev.clientX, y: ev.clientY }
+      subTabGhostRef.current = updated
+      setSubTabGhost(updated)
+      const raw = calcGapIndex(ev.clientX, ev.clientY)
+      const gap = raw === subTabOriginalGapRef.current ? null : raw
+      if (gap !== subTabDropGapRef.current) {
+        subTabDropGapRef.current = gap
+        setSubTabDropGapIndex(gap)
+      }
+    }
+
+    async function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      const sourceId = subTabDragIdRef.current
+      const gapIdx = subTabDropGapRef.current
+      const originalGap = subTabOriginalGapRef.current
+      subTabDragIdRef.current = null
+      subTabDropGapRef.current = null
+      subTabOriginalGapRef.current = null
+      subTabGhostRef.current = null
+      setSubTabDraggingId(null)
+      setSubTabGhost(null)
+      setSubTabDropGapIndex(null)
+      if (!sourceId || gapIdx === null || gapIdx === originalGap) return
+      const source = currentOrder.find(f => f.id === sourceId)!
+      const withoutSource = currentOrder.filter(f => f.id !== sourceId)
+      withoutSource.splice(gapIdx, 0, source)
+      await syncFolderOrderToChrome(withoutSource, bookmarkTree)
+      await loadTree()
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
   }
 
   async function handleDeleteSubFolder() {
@@ -521,7 +591,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app${drag ? ' app--dragging' : ''}${pillDraggingId ? ' app--pill-dragging' : ''}`}>
+    <div className={`app${drag ? ' app--dragging' : ''}${pillDraggingId ? ' app--pill-dragging' : ''}${subTabDraggingId ? ' app--subtab-dragging' : ''}`}>
       {moveToast && (
         <div className="move-toast">{moveToast}</div>
       )}
@@ -541,6 +611,15 @@ export default function App() {
           style={{ left: pillGhost.x, top: pillGhost.y }}
         >
           {pillGhost.title}
+        </div>
+      )}
+
+      {subTabGhost && (
+        <div
+          className="subfolder-drag-ghost"
+          style={{ left: subTabGhost.x, top: subTabGhost.y }}
+        >
+          {subTabGhost.title}
         </div>
       )}
 
@@ -724,7 +803,21 @@ export default function App() {
           {subFolders.map((f, i) => (
             <div
               key={f.id}
-              className={`subfolder-tab-wrapper${subFolderEditMode ? ' subfolder-tab-wrapper--edit' : ''}`}
+              className={[
+                'subfolder-tab-wrapper',
+                subFolderEditMode ? 'subfolder-tab-wrapper--edit' : '',
+                subTabDraggingId === f.id ? 'subfolder-tab-wrapper--dragging' : '',
+                subTabDraggingId === f.id && subTabDropGapIndex !== null ? 'subfolder-tab-wrapper--collapsed' : '',
+                (() => {
+                  if (subTabDropGapIndex === null || subTabDraggingId === f.id) return ''
+                  const nd = subFolders.filter(sf => sf.id !== subTabDraggingId)
+                  const ndIdx = nd.findIndex(sf => sf.id === f.id)
+                  if (ndIdx < 0) return ''
+                  if (subTabDropGapIndex === ndIdx) return 'subfolder-tab-wrapper--gap-before'
+                  if (subTabDropGapIndex === ndIdx + 1) return 'subfolder-tab-wrapper--gap-after'
+                  return ''
+                })(),
+              ].filter(Boolean).join(' ')}
               onMouseEnter={() => {
                 if (drag) { setDropFolderId(f.id); dropFolderRef.current = { id: f.id, title: f.title } }
               }}
@@ -739,8 +832,16 @@ export default function App() {
                   dropFolderId === f.id ? 'subfolder-tab--drop-active' : '',
                 ].filter(Boolean).join(' ')}
                 style={subFolderEditMode ? { animationDelay: `${(i % 3) * 0.07}s` } : undefined}
-                onMouseDown={() => { if (!subFolderEditMode) startSubTabLongPress() }}
-                onMouseUp={() => { if (!subFolderEditMode) cancelSubTabLongPress() }}
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return
+                  if (subFolderEditMode) {
+                    startSubTabDragReorder(e, f.id, f.title, subFolders)
+                  } else {
+                    startSubTabLongPress()
+                  }
+                }}
+                onMouseUp={(e) => { if (!subFolderEditMode && e.button === 0) cancelSubTabLongPress() }}
+                onContextMenu={(e) => e.preventDefault()}
                 onMouseLeave={() => cancelSubTabLongPress()}
                 onClick={() => {
                   if (!subFolderEditMode) {

@@ -367,7 +367,7 @@ html, body, #root {
 .subfolder-tab--edit {
   animation: pill-wobble 0.8s ease-in-out infinite;
   transform-origin: center bottom;
-  cursor: default;
+  cursor: grab;
 }
 .subfolder-tab--drop-active {
   background: rgba(255,122,60,0.25) !important;
@@ -375,6 +375,40 @@ html, body, #root {
   color: #fff !important;
   transform: scale(1.1);
   box-shadow: 0 0 0 3px rgba(255,122,60,0.3);
+}
+.subfolder-tab-wrapper {
+  transition: margin 0.12s ease, max-width 0.15s ease;
+}
+.subfolder-tab-wrapper--dragging .subfolder-tab {
+  opacity: 0;
+}
+.subfolder-tab-wrapper--dragging .subfolder-tab-close-btn {
+  display: none;
+}
+.subfolder-tab-wrapper--gap-before { margin-left: 40px; }
+.subfolder-tab-wrapper--gap-after  { margin-right: 40px; }
+.subfolder-tab-wrapper--collapsed {
+  max-width: 0 !important;
+  overflow: hidden;
+  margin: 0 !important;
+}
+.subfolder-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  padding: 4px 14px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(255,122,60,0.5), 0 4px 12px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%) scale(1.1);
+  animation: pill-ghost-in 0.1s ease;
+}
+.app--subtab-dragging, .app--subtab-dragging * {
+  cursor: grabbing !important;
 }
 .subfolder-tab-add-btn {
   display: flex;
