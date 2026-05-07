@@ -19,10 +19,15 @@ interface CallConfig {
   model: string
 }
 
+const CALL_TIMEOUT_MS = 60_000
+
 async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Promise<string> {
   const provider = PROVIDERS[config.providerId]
   const tag = `[SmartBookmark] ${provider.name} / ${config.model}`
   const t0 = Date.now()
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS)
 
   console.group(tag)
   console.log('prompt:', prompt)
@@ -36,7 +41,7 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
         model: config.model,
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
-      })
+      }, { signal: controller.signal })
       const content = msg.content[0]
       if (content.type !== 'text') throw new Error('Unexpected response type')
       result = content.text.trim()
@@ -47,6 +52,7 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        signal: controller.signal,
       })
       if (!res.ok) throw new Error(`Gemini API error: ${res.status} ${await res.text()}`)
       const data = await res.json() as {
@@ -66,7 +72,7 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
         model: config.model,
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
-      })
+      }, { signal: controller.signal })
       const choice = res.choices[0]?.message
       // DeepSeek R1 等模型有时内容在 reasoning_content 而非 content
       result = (choice?.content ?? (choice as unknown as Record<string, string>)?.reasoning_content ?? '').trim()
@@ -76,9 +82,14 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64): Prom
     console.log(`response (${Date.now() - t0}ms):`, result)
     return result
   } catch (err) {
+    if (controller.signal.aborted) {
+      console.error(`timeout after ${CALL_TIMEOUT_MS / 1000}s`)
+      throw new Error(`请求超时（${CALL_TIMEOUT_MS / 1000}s）`)
+    }
     console.error(`failed (${Date.now() - t0}ms):`, err)
     throw err
   } finally {
+    clearTimeout(timeoutId)
     console.groupEnd()
   }
 }
