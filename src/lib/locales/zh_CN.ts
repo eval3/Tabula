@@ -69,6 +69,10 @@ const messages: Messages = {
   organizeComplete: '整理完成 ✓',
   organizeFailed: '整理失败',
   noApiKeyToast: '请先配置 API Key',
+  // Background toast
+  toastClassifying: '正在智能分类收藏...',
+  toastSaved: '已收藏到「{folder}」',
+  toastSaveFailed: '收藏失败：{error}',
 }
 
 export default messages

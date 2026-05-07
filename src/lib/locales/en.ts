@@ -67,6 +67,10 @@ const messages = {
   organizeComplete: 'Done ✓',
   organizeFailed: 'Failed',
   noApiKeyToast: 'Please configure API Key first',
+  // Background toast
+  toastClassifying: 'Classifying and saving...',
+  toastSaved: 'Saved to 「{folder}」',
+  toastSaveFailed: 'Save failed: {error}',
 } as const
 
 export type Messages = { [K in keyof typeof messages]: string }
