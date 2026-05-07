@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { PROVIDER_LIST, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
+import { t } from '../lib/i18n'
 
 interface StorageData {
   activeProvider: ProviderId
@@ -60,18 +61,16 @@ export default function OptionsApp() {
   return (
     <div style={s.page}>
       <div style={s.card}>
-        {/* 标题 */}
         <div style={s.header}>
-          <span style={{ fontSize: 24 }}>🔖</span>
-          <h1 style={s.title}>Smart Bookmark 设置</h1>
+          <img src="/icons/logo.png" style={{ width: 28, height: 28 }} alt="" />
+          <h1 style={s.title}>{t('settingsPageTitle')}</h1>
         </div>
 
-        {/* 当前使用模型 */}
         <section style={s.section}>
-          <h2 style={s.sectionTitle}>当前使用</h2>
+          <h2 style={s.sectionTitle}>{t('sectionCurrentUsage')}</h2>
           <div style={s.row}>
             <div style={s.fieldGroup}>
-              <label style={s.label}>AI 提供商</label>
+              <label style={s.label}>{t('labelAiProvider')}</label>
               <select
                 value={data.activeProvider}
                 onChange={e => selectProvider(e.target.value as ProviderId)}
@@ -83,7 +82,7 @@ export default function OptionsApp() {
               </select>
             </div>
             <div style={s.fieldGroup}>
-              <label style={s.label}>模型</label>
+              <label style={s.label}>{t('labelModel')}</label>
               <select
                 value={data.activeModel}
                 onChange={e => setData(prev => ({ ...prev, activeModel: e.target.value }))}
@@ -96,14 +95,12 @@ export default function OptionsApp() {
             </div>
           </div>
           {!data.apiKeys[data.activeProvider] && (
-            <div style={s.warning}>⚠ 当前提供商尚未填写 API Key</div>
+            <div style={s.warning}>{t('apiKeyMissingWarning')}</div>
           )}
         </section>
 
-        {/* API Keys 管理 */}
         <section style={s.section}>
-          <h2 style={s.sectionTitle}>API Keys</h2>
-          {/* 提供商 Tab */}
+          <h2 style={s.sectionTitle}>{t('sectionApiKeys')}</h2>
           <div style={s.tabs}>
             {PROVIDER_LIST.map(p => (
               <button
@@ -120,7 +117,6 @@ export default function OptionsApp() {
             ))}
           </div>
 
-          {/* 当前 Tab 内容 */}
           <div style={s.tabContent}>
             <label style={s.label}>{tabProvider.name} API Key</label>
             <input
@@ -131,7 +127,7 @@ export default function OptionsApp() {
               style={s.input}
             />
             <p style={s.hint}>
-              获取 Key：
+              {t('getKeyLabel')}
               <a href={tabProvider.keyLink} target="_blank" rel="noreferrer" style={s.link}>
                 {tabProvider.keyLink.replace('https://', '')}
               </a>
@@ -139,13 +135,12 @@ export default function OptionsApp() {
           </div>
         </section>
 
-        {/* 行为设置 */}
         <section style={s.section}>
-          <h2 style={s.sectionTitle}>行为</h2>
+          <h2 style={s.sectionTitle}>{t('sectionBehavior')}</h2>
           <label style={s.toggleRow}>
             <div>
-              <div style={s.label}>新增书签时自动分类</div>
-              <div style={s.hint}>关闭后只有手动整理和快捷键会触发 AI</div>
+              <div style={s.label}>{t('autoClassifyLabel')}</div>
+              <div style={s.hint}>{t('autoClassifyHint')}</div>
             </div>
             <input
               type="checkbox"
@@ -156,18 +151,18 @@ export default function OptionsApp() {
           </label>
 
           <div style={{ marginTop: 12 }}>
-            <div style={s.label}>快捷键</div>
+            <div style={s.label}>{t('shortcutLabel')}</div>
             <div style={{ ...s.hint, marginTop: 4 }}>
-              收藏并分类当前页：<kbd style={s.kbd}>Alt+Shift+S</kbd>
+              {t('shortcutDescLabel')}<kbd style={s.kbd}>Alt+Shift+S</kbd>
             </div>
             <div style={{ ...s.hint, marginTop: 2 }}>
-              可在 <code>chrome://extensions/shortcuts</code> 中自定义
+              {t('shortcutCustomizeHint')}
             </div>
           </div>
         </section>
 
         <button style={s.saveBtn} onClick={handleSave}>
-          {saved ? '已保存 ✓' : '保存设置'}
+          {saved ? t('savedBtn') : t('saveSettingsBtn')}
         </button>
       </div>
     </div>

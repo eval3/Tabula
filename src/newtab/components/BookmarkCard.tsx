@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import type { BookmarkNode } from '../utils'
 import { useLongPress } from '../hooks/useLongPress'
+import { t } from '../../lib/i18n'
 
 const PALETTE = ['#a855f7', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6']
 
@@ -105,13 +106,13 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
     <>
       <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown} data-bookmark-id={bookmark.id}>
         <div className="card-actions">
-          <button className="card-edit-btn" onClick={openEdit} title="编辑书签">
+          <button className="card-edit-btn" onClick={openEdit} title={t('editBookmarkTitle')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
-          <button className="card-delete-btn" onClick={openDeleteModal} title="删除书签">
+          <button className="card-delete-btn" onClick={openDeleteModal} title={t('deleteBookmarkTitle')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -156,33 +157,33 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
         <div className="modal-overlay" onClick={() => setEditing(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>编辑书签</h3>
+              <h3>{t('modalEditBookmark')}</h3>
               <button className="modal-close" onClick={() => setEditing(false)}>×</button>
             </div>
             <div className="modal-body">
-              <label className="modal-label">名称</label>
+              <label className="modal-label">{t('nameLabel')}</label>
               <input
                 className="modal-input"
                 type="text"
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
-                placeholder="书签名称"
+                placeholder={t('bookmarkNamePlaceholder')}
               />
-              <label className="modal-label">分组</label>
+              <label className="modal-label">{t('groupLabel')}</label>
               <select
                 className="modal-select"
                 value={editFolderId}
                 onChange={e => setEditFolderId(e.target.value)}
               >
-                <option value="">不修改</option>
+                <option value="">{t('noChangeOption')}</option>
                 {folders.map(f => (
                   <option key={f.id} value={f.id}>{f.title}</option>
                 ))}
               </select>
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => setEditing(false)}>取消</button>
-              <button className="modal-btn save" onClick={handleSave}>保存</button>
+              <button className="modal-btn cancel" onClick={() => setEditing(false)}>{t('cancelBtn')}</button>
+              <button className="modal-btn save" onClick={handleSave}>{t('saveBtn')}</button>
             </div>
           </div>
         </div>
@@ -192,17 +193,17 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>删除书签</h3>
+              <h3>{t('modalDeleteBookmark')}</h3>
               <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <p className="delete-confirm-text">
-                确认删除「<strong>{bookmark.title || url}</strong>」？删除后无法恢复。
+                {t('deleteBookmarkConfirm', { title: bookmark.title || url })}
               </p>
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => setShowDeleteModal(false)}>取消</button>
-              <button className="modal-btn danger" onClick={confirmDelete}>确认删除</button>
+              <button className="modal-btn cancel" onClick={() => setShowDeleteModal(false)}>{t('cancelBtn')}</button>
+              <button className="modal-btn danger" onClick={confirmDelete}>{t('confirmDeleteBtn')}</button>
             </div>
           </div>
         </div>
@@ -212,7 +213,7 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
 }
 
 const SYS_IDS = new Set(['0', '1', '2', '3'])
-const SYS_TITLES = new Set(['书签栏', '其他书签', '移动设备书签', 'Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks'])
+const SYS_TITLES = new Set(['书签栏', '其他书签', '移动设备书签', 'Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks', '書籤列', '其他書籤', '行動裝置書籤'])
 
 function FolderTreePicker({
   tree,
@@ -328,12 +329,12 @@ function FolderTreePicker({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="folder-picker-header">
-          <span>移动到</span>
+          <span>{t('moveToLabel')}</span>
           <button
             className="folder-picker-confirm"
             onClick={() => onSelect(selectedId)}
           >
-            确定
+            {t('confirmBtn')}
           </button>
         </div>
         <div className="folder-picker-scroll">

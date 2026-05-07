@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { OrganizeStatus, OrganizeProgress } from '../../lib/organize'
+import { t } from '../../lib/i18n'
 
 interface Props {
   status: OrganizeStatus
@@ -12,11 +13,11 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
 
   useEffect(() => {
     if (status === 'success') {
-      setToast('整理完成 ✓')
+      setToast(t('organizeComplete'))
     } else if (status === 'error') {
-      setToast('整理失败')
+      setToast(t('organizeFailed'))
     } else if (status === 'no-key') {
-      setToast('请先配置 API Key')
+      setToast(t('noApiKeyToast'))
     }
     if (status !== 'idle' && status !== 'loading') {
       const timer = setTimeout(() => setToast(null), 3000)

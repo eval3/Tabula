@@ -7,6 +7,7 @@ import {
   type BookmarkNode,
 } from './utils'
 import { organizeAllBookmarks, type OrganizeStatus, type OrganizeProgress } from '../lib/organize'
+import { t } from '../lib/i18n'
 
 interface DragState {
   bookmarkId: string
@@ -498,7 +499,7 @@ export default function App() {
       setExitingId(null)
       await loadTree()
       if (toastTimer.current) clearTimeout(toastTimer.current)
-      setMoveToast(`已移入「${folderTitle}」`)
+      setMoveToast(t('movedToFolder', { folder: folderTitle }))
       toastTimer.current = setTimeout(() => setMoveToast(null), 2500)
     }, 250)
   }
@@ -550,8 +551,8 @@ export default function App() {
   }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths])
 
   const sectionTitle = useMemo(() => {
-    if (searchQuery.trim()) return `搜索"${searchQuery}"`
-    if (!selectedFolderId) return '最近添加'
+    if (searchQuery.trim()) return t('searchResultTitle', { query: searchQuery })
+    if (!selectedFolderId) return t('recentAddedTitle')
     return null
   }, [searchQuery, selectedFolderId])
 
@@ -598,7 +599,7 @@ export default function App() {
           className="drag-ghost"
           style={{ left: drag.x + 14, top: drag.y + 14 }}
         >
-          {drag.title || '书签'}
+          {drag.title || t('dragGhostFallback')}
         </div>
       )}
 
@@ -622,7 +623,7 @@ export default function App() {
 
       <div className="app-header">
         <img src="/icons/logo.png" className="app-logo" alt="" />
-        <h1 className="app-title">Smart Bookmark</h1>
+        <h1 className="app-title">{t('appName')}</h1>
       </div>
 
       <div className="search-wrapper">
@@ -630,7 +631,7 @@ export default function App() {
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder="搜索书签…"
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={e => {
               setSearchQuery(e.target.value)
@@ -648,7 +649,7 @@ export default function App() {
           className={`pill${selectedFolderId === null && !searchQuery.trim() ? ' active' : ''}`}
           onClick={() => { setSelectedFolderId(null); setSearchQuery('') }}
         >
-          最近
+          {t('recentPill')}
         </button>
         {sortedDisplayRoots.map((f, i) => (
           <div
@@ -712,7 +713,7 @@ export default function App() {
           <button
             className="pill-add-btn"
             onClick={() => setShowAddFolderModal(true)}
-            title="新建文件夹"
+            title={t('newFolderTooltip')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -744,14 +745,14 @@ export default function App() {
             </span>
           ) : sectionTitle}
         </h2>
-        <span className="section-count">{bookmarksWithFolder.length} 个书签</span>
+        <span className="section-count">{t('bookmarkCount', { count: bookmarksWithFolder.length })}</span>
         {isRecentView && (
           <div className="recent-dropdown" ref={dropdownRef}>
             <button
               className={`recent-dropdown-trigger${recentOpen ? ' open' : ''}`}
               onClick={() => setRecentOpen(o => !o)}
             >
-              最近 {recentMonths} 月
+              {t('recentMonths', { m: recentMonths })}
               <svg className={`recent-dropdown-chevron${recentOpen ? ' open' : ''}`} xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -765,7 +766,7 @@ export default function App() {
                     onClick={() => { setRecentMonths(m); setRecentOpen(false) }}
                   >
                     {recentMonths === m && <span className="recent-dropdown-check">✓</span>}
-                    最近 {m} 月
+                    {t('recentMonths', { m })}
                   </button>
                 ))}
               </div>
@@ -776,7 +777,7 @@ export default function App() {
           <button
             className="subfolder-tab-add-btn section-add-btn"
             onClick={() => setShowAddSubFolderModal(true)}
-            title="在当前文件夹下新建子文件夹"
+            title={t('addSubfolderTooltip')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -893,7 +894,7 @@ export default function App() {
           })()
         ) : bookmarksWithFolder.length === 0 ? (
           <div className="empty-state">
-            {searchQuery.trim() ? '没有匹配的书签' : '暂无书签'}
+            {searchQuery.trim() ? t('noMatchBookmarks') : t('noBookmarks')}
           </div>
         ) : (
           bookmarksWithFolder.map(b => (
@@ -925,15 +926,15 @@ export default function App() {
         <div className="modal-overlay" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>新建文件夹</h3>
+              <h3>{t('modalNewFolder')}</h3>
               <button className="modal-close" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>×</button>
             </div>
             <div className="modal-body">
-              <label className="modal-label">文件夹名称</label>
+              <label className="modal-label">{t('folderNameLabel')}</label>
               <input
                 className="modal-input"
                 type="text"
-                placeholder="请输入文件夹名称"
+                placeholder={t('folderNamePlaceholder')}
                 value={newFolderName}
                 onChange={e => setNewFolderName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddFolder() }}
@@ -941,8 +942,8 @@ export default function App() {
               />
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>取消</button>
-              <button className="modal-btn save" onClick={handleAddFolder} disabled={!newFolderName.trim()}>创建</button>
+              <button className="modal-btn cancel" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>{t('cancelBtn')}</button>
+              <button className="modal-btn save" onClick={handleAddFolder} disabled={!newFolderName.trim()}>{t('createBtn')}</button>
             </div>
           </div>
         </div>
@@ -952,17 +953,17 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setDeleteFolderTarget(null)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>删除文件夹</h3>
+              <h3>{t('modalDeleteFolder')}</h3>
               <button className="modal-close" onClick={() => setDeleteFolderTarget(null)}>×</button>
             </div>
             <div className="modal-body">
               <p className="delete-confirm-text">
-                确定要删除文件夹 <strong>「{deleteFolderTarget.title}」</strong> 及其所有书签吗？此操作不可撤销。
+                {t('deleteFolderConfirm', { name: deleteFolderTarget.title })}
               </p>
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => setDeleteFolderTarget(null)}>取消</button>
-              <button className="modal-btn danger" onClick={handleDeleteFolder}>删除</button>
+              <button className="modal-btn cancel" onClick={() => setDeleteFolderTarget(null)}>{t('cancelBtn')}</button>
+              <button className="modal-btn danger" onClick={handleDeleteFolder}>{t('deleteBtn')}</button>
             </div>
           </div>
         </div>
@@ -972,15 +973,15 @@ export default function App() {
         <div className="modal-overlay" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>新建子文件夹</h3>
+              <h3>{t('modalNewSubFolder')}</h3>
               <button className="modal-close" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>×</button>
             </div>
             <div className="modal-body">
-              <label className="modal-label">文件夹名称</label>
+              <label className="modal-label">{t('folderNameLabel')}</label>
               <input
                 className="modal-input"
                 type="text"
-                placeholder="请输入文件夹名称"
+                placeholder={t('folderNamePlaceholder')}
                 value={newSubFolderName}
                 onChange={e => setNewSubFolderName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddSubFolder() }}
@@ -988,8 +989,8 @@ export default function App() {
               />
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>取消</button>
-              <button className="modal-btn save" onClick={handleAddSubFolder} disabled={!newSubFolderName.trim()}>创建</button>
+              <button className="modal-btn cancel" onClick={() => { setShowAddSubFolderModal(false); setNewSubFolderName('') }}>{t('cancelBtn')}</button>
+              <button className="modal-btn save" onClick={handleAddSubFolder} disabled={!newSubFolderName.trim()}>{t('createBtn')}</button>
             </div>
           </div>
         </div>
@@ -999,17 +1000,17 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setDeleteSubFolderTarget(null)}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>删除子文件夹</h3>
+              <h3>{t('modalDeleteSubFolder')}</h3>
               <button className="modal-close" onClick={() => setDeleteSubFolderTarget(null)}>×</button>
             </div>
             <div className="modal-body">
               <p className="delete-confirm-text">
-                确定要删除文件夹 <strong>「{deleteSubFolderTarget.title}」</strong> 及其所有书签吗？此操作不可撤销。
+                {t('deleteFolderConfirm', { name: deleteSubFolderTarget.title })}
               </p>
             </div>
             <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => setDeleteSubFolderTarget(null)}>取消</button>
-              <button className="modal-btn danger" onClick={handleDeleteSubFolder}>删除</button>
+              <button className="modal-btn cancel" onClick={() => setDeleteSubFolderTarget(null)}>{t('cancelBtn')}</button>
+              <button className="modal-btn danger" onClick={handleDeleteSubFolder}>{t('deleteBtn')}</button>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PROVIDERS, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
 import { organizeAllBookmarks, type OrganizeProgress, type OrganizeStatus } from '../lib/organize'
+import { t } from '../lib/i18n'
 
 export default function App() {
   const [status, setStatus] = useState<OrganizeStatus>('idle')
@@ -25,23 +26,23 @@ export default function App() {
     <div style={styles.container}>
       <div style={styles.header}>
         <img src="/icons/logo.png" style={styles.logo} alt="" />
-        <h1 style={styles.title}>Smart Bookmark</h1>
+        <h1 style={styles.title}>{t('appName')}</h1>
       </div>
 
       <ActiveProviderBadge />
 
       {status === 'no-key' && (
-        <div style={styles.warning}>请先在设置页配置 API Key 和模型</div>
+        <div style={styles.warning}>{t('noApiKeyWarning')}</div>
       )}
       {status === 'error' && (
-        <div style={styles.error}>整理失败：{errorMsg}</div>
+        <div style={styles.error}>{t('organizeError', { error: errorMsg })}</div>
       )}
       {status === 'success' && (
-        <div style={styles.success}>整理完成！共处理 {progress.total} 个书签</div>
+        <div style={styles.success}>{t('organizeSuccess', { total: progress.total })}</div>
       )}
       {status === 'loading' && (
         <div style={styles.progressWrap}>
-          <div style={styles.progressText}>正在整理... {progress.done} / {progress.total}</div>
+          <div style={styles.progressText}>{t('organizing', { done: progress.done, total: progress.total })}</div>
           <div style={styles.progressBar}>
             <div style={{
               ...styles.progressFill,
@@ -52,18 +53,18 @@ export default function App() {
       )}
 
       <div style={styles.hint}>
-        快捷键收藏当前页：<kbd style={styles.kbd}>Alt+Shift+S</kbd>
+        {t('shortcutHint')}<kbd style={styles.kbd}>Alt+Shift+S</kbd>
       </div>
 
       <button style={styles.settingsBtn} onClick={() => chrome.runtime.openOptionsPage()}>
-        ⚙ 设置
+        {t('settingsBtn')}
       </button>
     </div>
   )
 }
 
 function ActiveProviderBadge() {
-  const [label, setLabel] = useState('加载中...')
+  const [label, setLabel] = useState(t('badgeLoading'))
 
   useState(() => {
     chrome.storage.sync.get(['activeProvider', 'activeModel'], (result) => {
