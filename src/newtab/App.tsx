@@ -75,6 +75,14 @@ export default function App() {
   useEffect(() => { loadTree() }, [])
 
   useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') loadTree()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  useEffect(() => {
     chrome.storage.local.get('pillOrder', (data) => {
       if (Array.isArray(data.pillOrder)) setPillOrder(data.pillOrder)
     })
