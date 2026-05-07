@@ -69,10 +69,27 @@ const messages: Messages = {
   organizeComplete: '整理完成 ✓',
   organizeFailed: '整理失败',
   noApiKeyToast: '请先配置 API Key',
+  organizePreviewTitle: '整理预览',
+  organizePreviewCount: '共 {count} 个书签将被整理',
+  organizePreviewApply: '确认整理',
   // Background toast
   toastClassifying: '正在智能分类收藏...',
   toastSaved: '已收藏到「{folder}」',
   toastSaveFailed: '收藏失败：{error}',
+  // Backup
+  sectionBackup: '数据备份',
+  saveSnapshotBtn: '保存当前书签',
+  savingSnapshot: '保存中...',
+  snapshotSaved: '已保存 ✓',
+  restoreSnapshotBtn: '恢复',
+  restoringSnapshot: '恢复中...',
+  snapshotRestored: '已恢复 ✓',
+  confirmRestoreBtn: '确认恢复',
+  cancelRestoreBtn: '取消',
+  restoreWarning: '将强行替换所有当前书签，操作不可撤销。',
+  deleteSnapshotBtn: '删除',
+  noSnapshots: '暂无备份',
+  snapshotBookmarkCount: '{count} 个书签',
 }
 
 export default messages

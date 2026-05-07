@@ -69,10 +69,27 @@ const messages: Messages = {
   organizeComplete: '整理完成 ✓',
   organizeFailed: '整理失敗',
   noApiKeyToast: '請先設定 API Key',
+  organizePreviewTitle: '整理預覽',
+  organizePreviewCount: '共 {count} 個書籤將被整理',
+  organizePreviewApply: '確認整理',
   // Background toast
   toastClassifying: '正在智能分類收藏...',
   toastSaved: '已收藏至「{folder}」',
   toastSaveFailed: '收藏失敗：{error}',
+  // Backup
+  sectionBackup: '資料備份',
+  saveSnapshotBtn: '儲存目前書籤',
+  savingSnapshot: '儲存中...',
+  snapshotSaved: '已儲存 ✓',
+  restoreSnapshotBtn: '恢復',
+  restoringSnapshot: '恢復中...',
+  snapshotRestored: '已恢復 ✓',
+  confirmRestoreBtn: '確認恢復',
+  cancelRestoreBtn: '取消',
+  restoreWarning: '將強行替換所有目前書籤，操作不可撤銷。',
+  deleteSnapshotBtn: '刪除',
+  noSnapshots: '暫無備份',
+  snapshotBookmarkCount: '{count} 個書籤',
 }
 
 export default messages

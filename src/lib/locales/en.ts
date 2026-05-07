@@ -67,10 +67,27 @@ const messages = {
   organizeComplete: 'Done ✓',
   organizeFailed: 'Failed',
   noApiKeyToast: 'Please configure API Key first',
+  organizePreviewTitle: 'Organize Preview',
+  organizePreviewCount: '{count} bookmarks will be organized',
+  organizePreviewApply: 'Apply',
   // Background toast
   toastClassifying: 'Classifying and saving...',
   toastSaved: 'Saved to 「{folder}」',
   toastSaveFailed: 'Save failed: {error}',
+  // Backup
+  sectionBackup: 'Backup',
+  saveSnapshotBtn: 'Save Current Bookmarks',
+  savingSnapshot: 'Saving...',
+  snapshotSaved: 'Saved ✓',
+  restoreSnapshotBtn: 'Restore',
+  restoringSnapshot: 'Restoring...',
+  snapshotRestored: 'Restored ✓',
+  confirmRestoreBtn: 'Confirm Restore',
+  cancelRestoreBtn: 'Cancel',
+  restoreWarning: 'This will overwrite ALL current bookmarks. Cannot be undone.',
+  deleteSnapshotBtn: 'Delete',
+  noSnapshots: 'No backups yet',
+  snapshotBookmarkCount: '{count} bookmarks',
 } as const
 
 export type Messages = { [K in keyof typeof messages]: string }
