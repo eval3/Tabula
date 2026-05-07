@@ -31,6 +31,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     baseURL: 'https://api.deepseek.com',
     models: [
       { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（推荐）' },
+      { id: 'deepseek-v4-pro[1m]', label: 'DeepSeek V4 Pro 1M' },
       { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash（快速）' },
       { id: 'deepseek-chat', label: 'DeepSeek V3' },
       { id: 'deepseek-reasoner', label: 'DeepSeek R1（推理）' },
