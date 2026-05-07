@@ -24,6 +24,10 @@ const messages: Messages = {
   shortcutLabel: '快捷鍵',
   shortcutDescLabel: '收藏並分類目前頁：',
   shortcutCustomizeHint: '可在 chrome://extensions/shortcuts 中自訂',
+  noProviderHint: '尚未新增任何 API Key，點擊右上角 + 開始新增',
+  clearKeyBtn: '清除',
+  addApiKeyTitle: '新增 API Key',
+  confirmAddBtn: '確認新增',
   savedBtn: '已儲存 ✓',
   saveSettingsBtn: '儲存設定',
   // Newtab

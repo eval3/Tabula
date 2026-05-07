@@ -19,7 +19,9 @@ const DEFAULT_DATA: StorageData = {
 export default function OptionsApp() {
   const [data, setData] = useState<StorageData>(DEFAULT_DATA)
   const [saved, setSaved] = useState(false)
-  const [activeTab, setActiveTab] = useState<ProviderId>(DEFAULT_PROVIDER)
+  const [page, setPage] = useState<'main' | 'add'>('main')
+  const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
+  const [addKey, setAddKey] = useState('')
 
   useEffect(() => {
     chrome.storage.sync.get(
@@ -31,14 +33,15 @@ export default function OptionsApp() {
           autoClassify: result.autoClassify !== false,
           apiKeys: (result.apiKeys as Partial<Record<ProviderId, string>>) ?? {},
         })
-        setActiveTab((result.activeProvider as ProviderId) ?? DEFAULT_PROVIDER)
       }
     )
   }, [])
 
-  function setApiKey(providerId: ProviderId, key: string) {
-    setData(prev => ({ ...prev, apiKeys: { ...prev.apiKeys, [providerId]: key } }))
-  }
+  useEffect(() => {
+    if (providersWithKey.length > 0 && !data.apiKeys[data.activeProvider]) {
+      selectProvider(providersWithKey[0].id)
+    }
+  }, [data.apiKeys])
 
   function selectProvider(providerId: ProviderId) {
     const provider = PROVIDER_LIST.find(p => p.id === providerId)!
@@ -55,61 +58,60 @@ export default function OptionsApp() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  function openAddPage() {
+    const firstWithoutKey = PROVIDER_LIST.find(p => !data.apiKeys[p.id])
+    const tab = firstWithoutKey?.id ?? DEFAULT_PROVIDER
+    setAddTab(tab)
+    setAddKey(data.apiKeys[tab] ?? '')
+    setPage('add')
+  }
+
+  function handleAddKey() {
+    if (!addKey.trim()) return
+    setData(prev => ({ ...prev, apiKeys: { ...prev.apiKeys, [addTab]: addKey.trim() } }))
+    setAddKey('')
+    setPage('main')
+  }
+
+  function handleClearKey() {
+    setData(prev => {
+      const keys = { ...prev.apiKeys }
+      delete keys[addTab]
+      return { ...prev, apiKeys: keys }
+    })
+    setAddKey('')
+  }
+
+  const providersWithKey = PROVIDER_LIST.filter(p => data.apiKeys[p.id])
   const activeProvider = PROVIDER_LIST.find(p => p.id === data.activeProvider)!
-  const tabProvider = PROVIDER_LIST.find(p => p.id === activeTab)!
+  const tabProvider = PROVIDER_LIST.find(p => p.id === addTab)!
 
-  return (
-    <div style={s.page}>
-      <div style={s.card}>
-        <div style={s.header}>
-          <img src="/icons/logo.png" style={{ width: 28, height: 28 }} alt="" />
-          <h1 style={s.title}>{t('settingsPageTitle')}</h1>
-        </div>
-
-        <section style={s.section}>
-          <h2 style={s.sectionTitle}>{t('sectionCurrentUsage')}</h2>
-          <div style={s.row}>
-            <div style={s.fieldGroup}>
-              <label style={s.label}>{t('labelAiProvider')}</label>
-              <select
-                value={data.activeProvider}
-                onChange={e => selectProvider(e.target.value as ProviderId)}
-                style={s.select}
-              >
-                {PROVIDER_LIST.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div style={s.fieldGroup}>
-              <label style={s.label}>{t('labelModel')}</label>
-              <select
-                value={data.activeModel}
-                onChange={e => setData(prev => ({ ...prev, activeModel: e.target.value }))}
-                style={s.select}
-              >
-                {activeProvider.models.map(m => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </div>
+  if (page === 'add') {
+    return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.header}>
+            <button style={s.backBtn} onClick={() => setPage('main')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="#374151" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <h1 style={s.title}>{t('addApiKeyTitle')}</h1>
           </div>
+
           {!data.apiKeys[data.activeProvider] && (
             <div style={s.warning}>{t('apiKeyMissingWarning')}</div>
           )}
-        </section>
 
-        <section style={s.section}>
-          <h2 style={s.sectionTitle}>{t('sectionApiKeys')}</h2>
           <div style={s.tabs}>
             {PROVIDER_LIST.map(p => (
               <button
                 key={p.id}
                 style={{
                   ...s.tab,
-                  ...(activeTab === p.id ? s.tabActive : {}),
+                  ...(addTab === p.id ? s.tabActive : {}),
                 }}
-                onClick={() => setActiveTab(p.id)}
+                onClick={() => { setAddTab(p.id); setAddKey(data.apiKeys[p.id] ?? '') }}
               >
                 {p.name}
                 {data.apiKeys[p.id] && <span style={s.dot} />}
@@ -118,13 +120,19 @@ export default function OptionsApp() {
           </div>
 
           <div style={s.tabContent}>
-            <label style={s.label}>{tabProvider.name} API Key</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label style={s.label}>{tabProvider.name} API Key</label>
+              {data.apiKeys[addTab] && (
+                <button style={s.clearBtn} onClick={handleClearKey}>{t('clearKeyBtn')}</button>
+              )}
+            </div>
             <input
               type="password"
-              value={data.apiKeys[activeTab] ?? ''}
-              onChange={e => setApiKey(activeTab, e.target.value)}
+              value={addKey}
+              onChange={e => setAddKey(e.target.value)}
               placeholder={tabProvider.keyPlaceholder}
               style={s.input}
+              autoFocus
             />
             <p style={s.hint}>
               {t('getKeyLabel')}
@@ -133,6 +141,60 @@ export default function OptionsApp() {
               </a>
             </p>
           </div>
+
+          <button
+            style={{ ...s.saveBtn, ...(!addKey.trim() ? s.saveBtnDisabled : {}) }}
+            onClick={handleAddKey}
+            disabled={!addKey.trim()}
+          >
+            {t('confirmAddBtn')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={s.page}>
+      <div style={s.card}>
+        <div style={s.header}>
+          <img src="/icons/logo.png" style={{ width: 28, height: 28 }} alt="" />
+          <h1 style={s.title}>{t('settingsPageTitle')}</h1>
+          <button style={s.addBtn} onClick={openAddPage} title={t('addApiKeyTitle')}>+</button>
+        </div>
+
+        <section style={s.section}>
+          <h2 style={s.sectionTitle}>{t('sectionCurrentUsage')}</h2>
+          {providersWithKey.length === 0 ? (
+            <div style={s.warning}>{t('noProviderHint')}</div>
+          ) : (
+            <div style={s.row}>
+              <div style={s.fieldGroup}>
+                <label style={s.label}>{t('labelAiProvider')}</label>
+                <select
+                  value={data.activeProvider}
+                  onChange={e => selectProvider(e.target.value as ProviderId)}
+                  style={s.select}
+                >
+                  {providersWithKey.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={s.fieldGroup}>
+                <label style={s.label}>{t('labelModel')}</label>
+                <select
+                  value={data.activeModel}
+                  onChange={e => setData(prev => ({ ...prev, activeModel: e.target.value }))}
+                  style={s.select}
+                >
+                  {activeProvider.models.map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </section>
 
         <section style={s.section}>
@@ -161,7 +223,11 @@ export default function OptionsApp() {
           </div>
         </section>
 
-        <button style={s.saveBtn} onClick={handleSave}>
+        <button
+          style={{ ...s.saveBtn, ...(!data.apiKeys[data.activeProvider] ? s.saveBtnDisabled : {}) }}
+          onClick={handleSave}
+          disabled={!data.apiKeys[data.activeProvider]}
+        >
           {saved ? t('savedBtn') : t('saveSettingsBtn')}
         </button>
       </div>
@@ -189,7 +255,35 @@ const s: Record<string, React.CSSProperties> = {
     gap: 28,
   },
   header: { display: 'flex', alignItems: 'center', gap: 10 },
-  title: { fontSize: 20, fontWeight: 700, color: '#111' },
+  title: { fontSize: 20, fontWeight: 700, color: '#111', flex: 1 },
+  addBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    border: '1px solid #d1d5db',
+    background: '#f9fafb',
+    color: '#374151',
+    fontSize: 20,
+    lineHeight: 1,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    border: '1px solid #e5e7eb',
+    background: '#f9fafb',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    padding: 0,
+  },
   section: { display: 'flex', flexDirection: 'column', gap: 12 },
   sectionTitle: {
     fontSize: 13,
@@ -206,11 +300,13 @@ const s: Record<string, React.CSSProperties> = {
   select: {
     border: '1px solid #d1d5db',
     borderRadius: 8,
-    padding: '8px 10px',
+    padding: '8px 30px 8px 10px',
     fontSize: 14,
-    background: '#fff',
+    background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center`,
+    appearance: 'none' as const,
     outline: 'none',
     cursor: 'pointer',
+    width: '100%',
   },
   warning: {
     background: '#fef3c7',
@@ -294,5 +390,17 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     width: '100%',
+  },
+  saveBtnDisabled: {
+    background: '#c7c7e8',
+    cursor: 'not-allowed',
+  },
+  clearBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#ef4444',
+    fontSize: 12,
+    cursor: 'pointer',
+    padding: 0,
   },
 }

@@ -22,6 +22,10 @@ const messages = {
   shortcutLabel: 'Shortcut',
   shortcutDescLabel: 'Save and classify current page:',
   shortcutCustomizeHint: 'Customize at chrome://extensions/shortcuts',
+  noProviderHint: 'No API Key configured. Tap + to add one.',
+  clearKeyBtn: 'Clear',
+  addApiKeyTitle: 'Add API Key',
+  confirmAddBtn: 'Confirm',
   savedBtn: 'Saved ✓',
   saveSettingsBtn: 'Save Settings',
   // Newtab
