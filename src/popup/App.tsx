@@ -78,18 +78,27 @@ function ShortcutKeys({ shortcut, kbdStyle }: { shortcut: string; kbdStyle: Reac
 
 function ActiveProviderBadge() {
   const [label, setLabel] = useState(t('badgeLoading'))
+  const [hasKey, setHasKey] = useState(true)
 
   useState(() => {
-    chrome.storage.sync.get(['activeProvider', 'activeModel'], (result) => {
+    chrome.storage.sync.get(['activeProvider', 'activeModel', 'apiKeys'], (result) => {
       const pid: ProviderId = (result.activeProvider as ProviderId) ?? DEFAULT_PROVIDER
+      const apiKeys = (result.apiKeys as Partial<Record<ProviderId, string>>) ?? {}
+      const key = apiKeys[pid]
+      if (!key) {
+        setHasKey(false)
+        setLabel(t('noApiKeyWarning'))
+        return
+      }
       const provider = PROVIDERS[pid]
       const model = result.activeModel as string ?? ''
       const modelLabel = provider.models.find(m => m.id === model)?.label ?? model
+      setHasKey(true)
       setLabel(`${provider.name} · ${modelLabel}`)
     })
   })
 
-  return <div style={styles.badge}>{label}</div>
+  return <div style={hasKey ? styles.badge : styles.badgeWarn}>{label}</div>
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -106,6 +115,15 @@ const styles: Record<string, React.CSSProperties> = {
   badge: {
     background: '#f0f0ff',
     color: '#4f46e5',
+    borderRadius: 20,
+    padding: '3px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    alignSelf: 'flex-start',
+  },
+  badgeWarn: {
+    background: '#fef3c7',
+    color: '#92400e',
     borderRadius: 20,
     padding: '3px 10px',
     fontSize: 11,
