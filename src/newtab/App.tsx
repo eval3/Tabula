@@ -6,7 +6,7 @@ import {
   getRecentBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
   type BookmarkNode,
 } from './utils'
-import { organizeAllBookmarks, type OrganizeStatus, type OrganizeProgress } from '../lib/organize'
+import { previewOrganize, applyOrganize, type OrganizeStatus, type OrganizeProgress, type PreviewItem } from '../lib/organize'
 import { t } from '../lib/i18n'
 
 interface DragState {
@@ -22,6 +22,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [organizeStatus, setOrganizeStatus] = useState<OrganizeStatus>('idle')
   const [organizeProgress, setOrganizeProgress] = useState<OrganizeProgress>({ done: 0, total: 0 })
+  const [organizePreview, setOrganizePreview] = useState<PreviewItem[] | null>(null)
   const [recentMonths, setRecentMonths] = useState(1)
   const [recentOpen, setRecentOpen] = useState(false)
   const [drag, setDrag] = useState<DragState | null>(null)
@@ -591,7 +592,22 @@ export default function App() {
   async function handleOrganize() {
     setOrganizeStatus('loading')
     setOrganizeProgress({ done: 0, total: 0 })
-    const result = await organizeAllBookmarks((p) => setOrganizeProgress(p))
+    const result = await previewOrganize((p) => setOrganizeProgress(p))
+    if (result.status === 'success' && result.items) {
+      setOrganizePreview(result.items)
+      setOrganizeStatus('idle')
+    } else {
+      setOrganizeStatus(result.status)
+    }
+  }
+
+  async function handleConfirmOrganize() {
+    if (!organizePreview) return
+    const items = organizePreview
+    setOrganizePreview(null)
+    setOrganizeStatus('loading')
+    setOrganizeProgress({ done: 0, total: items.length })
+    const result = await applyOrganize(items, (p) => setOrganizeProgress(p))
     setOrganizeStatus(result.status)
     if (result.status === 'success') await loadTree()
   }
@@ -1019,6 +1035,33 @@ export default function App() {
             <div className="modal-footer">
               <button className="modal-btn cancel" onClick={() => setDeleteSubFolderTarget(null)}>{t('cancelBtn')}</button>
               <button className="modal-btn danger" onClick={handleDeleteSubFolder}>{t('deleteBtn')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {organizePreview && (
+        <div className="modal-overlay" onClick={() => setOrganizePreview(null)}>
+          <div className="modal-dialog modal-dialog--wide" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{t('organizePreviewTitle')}</h3>
+              <button className="modal-close" onClick={() => setOrganizePreview(null)}>×</button>
+            </div>
+            <div className="modal-body organize-preview-body">
+              <p className="organize-preview-count">{t('organizePreviewCount', { count: organizePreview.length })}</p>
+              <div className="organize-preview-list">
+                {organizePreview.map(item => (
+                  <div key={item.bookmarkId} className="organize-preview-item">
+                    <span className="organize-preview-title">{item.title}</span>
+                    <span className="organize-preview-arrow">→</span>
+                    <span className="organize-preview-folder">{item.targetFolder}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => setOrganizePreview(null)}>{t('cancelBtn')}</button>
+              <button className="modal-btn save" onClick={handleConfirmOrganize}>{t('organizePreviewApply')}</button>
             </div>
           </div>
         </div>

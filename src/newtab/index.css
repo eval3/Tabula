@@ -918,6 +918,59 @@ html, body, #root {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ── Organize preview modal ── */
+.modal-dialog--wide {
+  width: 520px;
+}
+.organize-preview-body {
+  padding: 16px 20px 0;
+}
+.organize-preview-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 10px 0;
+}
+.organize-preview-list {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.organize-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+.organize-preview-title {
+  flex: 1;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.organize-preview-arrow {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.organize-preview-folder {
+  color: var(--accent);
+  font-size: 12px;
+  flex-shrink: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
 /* ── Drag ghost ── */
 .drag-ghost {
   position: fixed;
