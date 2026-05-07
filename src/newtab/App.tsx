@@ -21,7 +21,6 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [organizeStatus, setOrganizeStatus] = useState<OrganizeStatus>('idle')
   const [organizeProgress, setOrganizeProgress] = useState<OrganizeProgress>({ done: 0, total: 0 })
-  const [showFullPath, setShowFullPath] = useState(false)
   const [recentMonths, setRecentMonths] = useState(1)
   const [recentOpen, setRecentOpen] = useState(false)
   const [drag, setDrag] = useState<DragState | null>(null)
@@ -575,11 +574,9 @@ export default function App() {
   const bookmarksWithFolder = useMemo(() =>
     displayedBookmarks.map(b => ({
       ...b,
-      folderName: showFullPath
-        ? getBookmarkPath(b.id, bookmarkTree)
-        : findFolderName(b.id, bookmarkTree),
+      folderName: getBookmarkPath(b.id, bookmarkTree),
     })),
-    [displayedBookmarks, bookmarkTree, showFullPath]
+    [displayedBookmarks, bookmarkTree]
   )
 
   async function handleOrganize() {
@@ -747,15 +744,6 @@ export default function App() {
             </span>
           ) : sectionTitle}
         </h2>
-        <label className="path-toggle">
-          <input
-            type="checkbox"
-            checked={showFullPath}
-            onChange={e => setShowFullPath(e.target.checked)}
-          />
-          <span className="toggle-slider" />
-          <span className="toggle-label">完整路径</span>
-        </label>
         <span className="section-count">{bookmarksWithFolder.length} 个书签</span>
         {isRecentView && (
           <div className="recent-dropdown" ref={dropdownRef}>
@@ -873,9 +861,7 @@ export default function App() {
               .filter(b => b.id !== reorderDragId)
               .map(b => ({
                 ...b,
-                folderName: showFullPath
-                  ? getBookmarkPath(b.id, bookmarkTree)
-                  : findFolderName(b.id, bookmarkTree),
+                folderName: getBookmarkPath(b.id, bookmarkTree),
               }))
             // Drop slot is only valid within the same-folder block
             const sameIdxs = nonDragged
