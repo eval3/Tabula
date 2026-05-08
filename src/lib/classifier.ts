@@ -73,7 +73,8 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64, timeo
         model: config.model,
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
-      }, { signal: controller.signal })
+        ...(config.providerId === 'deepseek' && { thinking: { type: 'disabled' } }),
+      } as Parameters<typeof client.chat.completions.create>[0], { signal: controller.signal })
       const choice = res.choices[0]?.message
       // DeepSeek R1 等模型有时内容在 reasoning_content 而非 content
       result = (choice?.content ?? (choice as unknown as Record<string, string>)?.reasoning_content ?? '').trim()
@@ -123,7 +124,7 @@ export async function classifyBookmarks(
   bookmarks: BookmarkItem[],
   existingFolders: string[]
 ): Promise<ClassifyResult[]> {
-  const prompt = `将书签分类到文件夹。直接输出JSON，不要分析过程。
+  const prompt = `将书签分类到文件夹。
 
 现有文件夹：
 ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
