@@ -166,9 +166,11 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
                 strokeDasharray: `${(progress.done / progress.total) * 150.8} 150.8`,
               }}
             />
-            <text className="fab-progress-text" x="28" y="32">
-              {Math.round((progress.done / progress.total) * 100)}%
-            </text>
+            <g transform="rotate(90 28 28)">
+              <text className="fab-progress-text" x="28" y="32">
+                {Math.round((progress.done / progress.total) * 100)}%
+              </text>
+            </g>
           </svg>
         </div>
       ) : (
