@@ -6,7 +6,7 @@ import {
   getRecentBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
   type BookmarkNode,
 } from './utils'
-import { previewOrganize, applyOrganize, type OrganizeStatus, type OrganizeProgress, type PreviewItem } from '../lib/organize'
+import { previewOrganize, applyOrganize, type OrganizeStatus, type OrganizeProgress, type PreviewItem, type OrganizePrefs } from '../lib/organize'
 import { t } from '../lib/i18n'
 
 interface DragState {
@@ -589,10 +589,10 @@ export default function App() {
     [displayedBookmarks, bookmarkTree]
   )
 
-  async function handleOrganize() {
+  async function handleOrganize(prefs: OrganizePrefs) {
     setOrganizeStatus('loading')
     setOrganizeProgress({ done: 0, total: 0 })
-    const result = await previewOrganize((p) => setOrganizeProgress(p))
+    const result = await previewOrganize((p) => setOrganizeProgress(p), prefs)
     if (result.status === 'success' && result.items) {
       setOrganizePreview(result.items)
       setOrganizeStatus('idle')

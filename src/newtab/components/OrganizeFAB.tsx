@@ -1,38 +1,161 @@
-import { useState, useEffect } from 'react'
-import type { OrganizeStatus, OrganizeProgress } from '../../lib/organize'
+import { useState, useEffect, useRef } from 'react'
+import type { OrganizeStatus, OrganizeProgress, OrganizePrefs } from '../../lib/organize'
+import { DEFAULT_PREFS } from '../../lib/organize'
 import { t } from '../../lib/i18n'
 
 interface Props {
   status: OrganizeStatus
   progress: OrganizeProgress
-  onOrganize: () => void
+  onOrganize: (prefs: OrganizePrefs) => void
 }
 
 export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
   const [toast, setToast] = useState<string | null>(null)
+  const [showConfig, setShowConfig] = useState(false)
+  const [prefs, setPrefs] = useState<OrganizePrefs>(DEFAULT_PREFS)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (status === 'success') {
-      setToast(t('organizeComplete'))
-    } else if (status === 'error') {
-      setToast(t('organizeFailed'))
-    } else if (status === 'no-key') {
-      setToast(t('noApiKeyToast'))
-    }
+    chrome.storage.local.get('organizePrefs', (data) => {
+      if (data.organizePrefs) setPrefs(prev => ({ ...prev, ...(data.organizePrefs as Partial<OrganizePrefs>) }))
+    })
+  }, [])
+
+  useEffect(() => {
+    if (status === 'success') setToast(t('organizeComplete'))
+    else if (status === 'error') setToast(t('organizeFailed'))
+    else if (status === 'no-key') setToast(t('noApiKeyToast'))
     if (status !== 'idle' && status !== 'loading') {
       const timer = setTimeout(() => setToast(null), 3000)
       return () => clearTimeout(timer)
     }
   }, [status])
 
+  useEffect(() => {
+    if (!showConfig) return
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowConfig(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showConfig])
+
+  function updatePrefs(update: Partial<OrganizePrefs>) {
+    const next = { ...prefs, ...update }
+    setPrefs(next)
+    chrome.storage.local.set({ organizePrefs: next })
+  }
+
+  function handleStart() {
+    setShowConfig(false)
+    onOrganize(prefs)
+  }
+
   const isLoading = status === 'loading'
 
   return (
-    <div className="fab-container">
+    <div className="fab-container" ref={containerRef}>
       {toast && <div className="fab-toast">{toast}</div>}
+
+      {showConfig && (
+        <div className="fab-config-panel">
+          <div className="fab-config-header">
+            <span className="fab-config-title">{t('organizeConfigTitle')}</span>
+            <button className="fab-config-close" onClick={() => setShowConfig(false)}>×</button>
+          </div>
+
+          <div className="fab-config-section">
+            <div className="fab-config-label">{t('organizeGranularity')}</div>
+            <div className="fab-seg">
+              {(['coarse', 'medium', 'fine'] as const).map(g => (
+                <button
+                  key={g}
+                  className={`fab-seg-btn${prefs.granularity === g ? ' active' : ''}`}
+                  onClick={() => updatePrefs({ granularity: g })}
+                >
+                  {g === 'coarse' ? t('granularityCoarse') : g === 'medium' ? t('granularityMedium') : t('granularityFine')}
+                </button>
+              ))}
+            </div>
+            <div className="fab-config-hint">
+              {prefs.granularity === 'coarse' && '5–8 个大类'}
+              {prefs.granularity === 'medium' && '8–15 个分类'}
+              {prefs.granularity === 'fine'   && '15+ 个专题文件夹'}
+            </div>
+          </div>
+
+          <div className="fab-config-section">
+            <div className="fab-config-label">{t('organizeNamingLang')}</div>
+            <div className="fab-seg">
+              {(['zh', 'en', 'auto'] as const).map(l => (
+                <button
+                  key={l}
+                  className={`fab-seg-btn${prefs.namingLang === l ? ' active' : ''}`}
+                  onClick={() => updatePrefs({ namingLang: l })}
+                >
+                  {l === 'zh' ? t('namingLangZh') : l === 'en' ? t('namingLangEn') : t('namingLangAuto')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="fab-config-section">
+            <div className="fab-config-label">{t('organizeClassifyBy')}</div>
+            <div className="fab-seg fab-seg--2col">
+              {(['topic', 'scenario', 'type', 'platform'] as const).map(cb => (
+                <button
+                  key={cb}
+                  className={`fab-seg-btn${prefs.classifyBy === cb ? ' active' : ''}`}
+                  onClick={() => updatePrefs({ classifyBy: cb })}
+                >
+                  {cb === 'topic'    ? t('classifyByTopic')    :
+                   cb === 'scenario' ? t('classifyByScenario') :
+                   cb === 'type'     ? t('classifyByType')     :
+                                       t('classifyByPlatform')}
+                </button>
+              ))}
+            </div>
+            <div className="fab-config-hint">
+              {prefs.classifyBy === 'topic'    && '科技、购物、娱乐、教育…'}
+              {prefs.classifyBy === 'scenario' && '工作、学习、生活、娱乐…'}
+              {prefs.classifyBy === 'type'     && '视频、文章、工具、文档…'}
+              {prefs.classifyBy === 'platform' && 'GitHub、YouTube、知乎…'}
+            </div>
+          </div>
+
+          <div className="fab-config-section fab-config-row">
+            <div className="fab-config-label">{t('organizeAllowNew')}</div>
+            <button
+              className={`fab-toggle${prefs.allowNewFolders ? ' active' : ''}`}
+              onClick={() => updatePrefs({ allowNewFolders: !prefs.allowNewFolders })}
+              aria-pressed={prefs.allowNewFolders}
+            >
+              <span className="fab-toggle-thumb" />
+            </button>
+          </div>
+
+          <div className="fab-config-section">
+            <div className="fab-config-label">{t('organizeCustom')}</div>
+            <textarea
+              className="fab-custom-input"
+              rows={2}
+              placeholder={t('organizeCustomPlaceholder')}
+              value={prefs.customInstructions}
+              onChange={e => updatePrefs({ customInstructions: e.target.value })}
+            />
+          </div>
+
+          <button className="fab-start-btn" onClick={handleStart}>
+            {t('organizeStartBtn')}
+          </button>
+        </div>
+      )}
+
       <button
         className={`fab-btn${isLoading ? ' loading' : ''}`}
-        onClick={onOrganize}
+        onClick={() => { if (!isLoading) setShowConfig(s => !s) }}
         disabled={isLoading}
       >
         {isLoading ? (

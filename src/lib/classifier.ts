@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 import { PROVIDERS, type ProviderId } from './providers'
+import type { OrganizePrefs } from './organize'
 
 export interface BookmarkItem {
   id: string
@@ -119,12 +120,37 @@ ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
   return result
 }
 
+function buildPrefsHints(prefs?: OrganizePrefs): string {
+  if (!prefs) return ''
+  const hints: string[] = []
+
+  const classifyByHints: Record<string, string> = {
+    topic:    '按内容主题分类（如：科技与AI、购物、娱乐、教育、新闻等）。',
+    scenario: '按使用场景分类（如：工作效率、学习研究、日常生活、娱乐休闲等）。',
+    type:     '按内容类型分类（如：视频、文章、在线工具、开发文档、社区论坛等）。',
+    platform: '按来源平台分类（如：GitHub、YouTube、知乎、Twitter、Reddit等）。',
+  }
+  if (prefs.classifyBy && classifyByHints[prefs.classifyBy]) {
+    hints.push(classifyByHints[prefs.classifyBy])
+  }
+
+  if (prefs.granularity === 'coarse') hints.push('分类要粗略，将相关内容合并到宽泛大类，目标5-8个文件夹。')
+  if (prefs.granularity === 'fine')   hints.push('分类要精细，可细分为专题子文件夹，目标15-30个文件夹。')
+  if (prefs.namingLang === 'zh') hints.push('文件夹名称必须使用中文。')
+  if (prefs.namingLang === 'en') hints.push('Folder names must be in English.')
+  if (!prefs.allowNewFolders)    hints.push('只能使用现有文件夹，禁止创建新文件夹。')
+  if (prefs.customInstructions.trim()) hints.push(prefs.customInstructions.trim())
+  return hints.length > 0 ? '\n' + hints.join('\n') : ''
+}
+
 export async function classifyBookmarks(
   config: CallConfig,
   bookmarks: BookmarkItem[],
-  existingFolders: string[]
+  existingFolders: string[],
+  prefs?: OrganizePrefs
 ): Promise<ClassifyResult[]> {
-  const prompt = `将书签分类到文件夹。
+  const prefsHints = buildPrefsHints(prefs)
+  const prompt = `将书签分类到文件夹。${prefsHints}
 
 现有文件夹：
 ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
@@ -136,7 +162,7 @@ ${bookmarks.map((b, i) => {
   return `${i + 1}. ${b.title} | ${shortUrl}`
 }).join('\n')}
 
-返回JSON数组 [{"folderName":"路径"}]，顺序与书签一致，路径最多两级，可新建文件夹，只返回JSON。`
+返回JSON数组 [{"folderName":"路径"}]，顺序与书签一致，路径最多两级，只返回JSON。`
 
   const text = await callLLM(config, prompt, 4096, BATCH_TIMEOUT_MS)
   const jsonStr = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()

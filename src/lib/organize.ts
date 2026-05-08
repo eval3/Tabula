@@ -12,6 +12,22 @@ export interface PreviewItem {
   targetFolder: string
 }
 
+export interface OrganizePrefs {
+  granularity: 'coarse' | 'medium' | 'fine'
+  namingLang: 'zh' | 'en' | 'auto'
+  allowNewFolders: boolean
+  classifyBy: 'topic' | 'scenario' | 'type' | 'platform'
+  customInstructions: string
+}
+
+export const DEFAULT_PREFS: OrganizePrefs = {
+  granularity: 'medium',
+  namingLang: 'zh',
+  allowNewFolders: true,
+  classifyBy: 'topic',
+  customInstructions: '',
+}
+
 async function resolveConfig(): Promise<
   | { status: 'no-key' }
   | { status: 'ok'; config: { providerId: ProviderId; apiKey: string; model: string } }
@@ -26,7 +42,8 @@ async function resolveConfig(): Promise<
 }
 
 export async function previewOrganize(
-  onProgress: (p: OrganizeProgress) => void
+  onProgress: (p: OrganizeProgress) => void,
+  prefs: OrganizePrefs = DEFAULT_PREFS
 ): Promise<{ status: Exclude<OrganizeStatus, 'idle' | 'loading'>; items?: PreviewItem[]; error?: string }> {
   const configResult = await resolveConfig()
   if (configResult.status === 'no-key') return { status: 'no-key' }
@@ -56,7 +73,7 @@ export async function previewOrganize(
     for (let i = 0; i < batches.length; i += concurrency) {
       const chunk = batches.slice(i, i + concurrency)
       const chunkResults = await Promise.all(
-        chunk.map(batch => classifyBookmarks(config, batch, folderNames))
+        chunk.map(batch => classifyBookmarks(config, batch, folderNames, prefs))
       )
       for (const results of chunkResults) {
         for (const r of results) {
