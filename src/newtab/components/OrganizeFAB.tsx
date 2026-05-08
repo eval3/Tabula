@@ -153,14 +153,9 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
         </div>
       )}
 
-      <button
-        className={`fab-btn${isLoading ? ' loading' : ''}`}
-        onClick={() => { if (!isLoading) setShowConfig(s => !s) }}
-        disabled={isLoading}
-        title={isLoading ? `${progress.done}/${progress.total}` : undefined}
-      >
-        {isLoading ? (
-          <svg className="fab-progress-ring" viewBox="0 0 56 56">
+      {isLoading ? (
+        <div className="fab-progress-container" title={`${progress.done}/${progress.total}`}>
+          <svg className="fab-progress-ring" viewBox="0 0 56 56" preserveAspectRatio="xMidYMid meet">
             <circle className="fab-progress-bg" cx="28" cy="28" r="24" />
             <circle
               className="fab-progress-bar"
@@ -175,10 +170,16 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
               {Math.round((progress.done / progress.total) * 100)}%
             </text>
           </svg>
-        ) : (
+        </div>
+      ) : (
+        <button
+          className="fab-btn"
+          onClick={() => setShowConfig(s => !s)}
+          disabled={isLoading}
+        >
           <span className="fab-icon">✦</span>
-        )}
-      </button>
+        </button>
+      )}
     </div>
   )
 }
