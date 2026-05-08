@@ -52,8 +52,6 @@ export default function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const dropFolderRef = useRef<{ id: string; title: string } | null>(null)
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const subLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const subTabDragIdRef = useRef<string | null>(null)
   const subTabGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
   const subTabDropGapRef = useRef<number | null>(null)
@@ -62,6 +60,8 @@ export default function App() {
   const pillGhostRef = useRef<{ title: string; x: number; y: number } | null>(null)
   const pillDropGapRef = useRef<number | null>(null)
   const pillDragOriginalGapRef = useRef<number | null>(null)
+  const pillDragActiveRef = useRef(false)
+  const subTabDragActiveRef = useRef(false)
   const reorderDragIdRef = useRef<string | null>(null)
   const reorderInsertIdxRef = useRef<number | null>(null)
   const reorderBaseListRef = useRef<BookmarkNode[] | null>(null)
@@ -138,28 +138,11 @@ export default function App() {
     capturedRectsRef.current = map
   }, [reorderInsertIdx, reorderDragId])
 
-  function startPillLongPress(_id: string) {
-    longPressTimer.current = setTimeout(() => setPillEditMode(true), 600)
-  }
-
-  function cancelPillLongPress() {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
-  }
-
-  function startSubTabLongPress() {
-    subLongPressTimer.current = setTimeout(() => setSubFolderEditMode(true), 600)
-  }
-
-  function cancelSubTabLongPress() {
-    if (subLongPressTimer.current) { clearTimeout(subLongPressTimer.current); subLongPressTimer.current = null }
-  }
-
-  function startSubTabDragReorder(e: React.MouseEvent, id: string, title: string, currentOrder: BookmarkNode[]) {
-    e.preventDefault()
+  function startSubTabDragReorder(startX: number, startY: number, id: string, title: string, currentOrder: BookmarkNode[]) {
     subTabDragIdRef.current = id
     setSubTabDraggingId(id)
     subTabOriginalGapRef.current = currentOrder.findIndex(f => f.id === id)
-    const ghost = { title, x: e.clientX, y: e.clientY }
+    const ghost = { title, x: startX, y: startY }
     subTabGhostRef.current = ghost
     setSubTabGhost(ghost)
 
@@ -263,13 +246,11 @@ export default function App() {
     await loadTree()
   }
 
-  function startPillDragReorder(e: React.MouseEvent, id: string, title: string, currentOrder: { id: string }[]) {
-    e.preventDefault()
+  function startPillDragReorder(startX: number, startY: number, id: string, title: string, currentOrder: { id: string }[]) {
     pillDragIdRef.current = id
     setPillDraggingId(id)
-    // original gap = index of dragged pill in non-dragging array = its index in currentOrder
     pillDragOriginalGapRef.current = currentOrder.findIndex(f => f.id === id)
-    const ghost = { title, x: e.clientX, y: e.clientY }
+    const ghost = { title, x: startX, y: startY }
     pillGhostRef.current = ghost
     setPillGhost(ghost)
 
@@ -675,7 +656,7 @@ export default function App() {
         >
           {t('recentPill')}
         </button>
-        {sortedDisplayRoots.map((f, i) => (
+        {sortedDisplayRoots.map((f) => (
           <div
             key={f.id}
             className={[
@@ -705,32 +686,32 @@ export default function App() {
                 selectedFolderId === f.id ? 'active' : '',
                 drag ? 'pill--receive' : '',
                 dropFolderId === f.id ? 'pill--drop-active' : '',
-                pillEditMode ? 'pill--edit' : '',
               ].filter(Boolean).join(' ')}
-              style={pillEditMode ? { animationDelay: `${(i % 3) * 0.07}s` } : undefined}
               onMouseDown={(e) => {
-                if (e.button !== 0) return
-                if (pillEditMode) {
-                  startPillDragReorder(e, f.id, f.title, sortedDisplayRoots)
-                } else if (!drag) {
-                  startPillLongPress(f.id)
+                if (e.button !== 0 || drag) return
+                const sx = e.clientX, sy = e.clientY
+                function onMove(ev: MouseEvent) {
+                  if (Math.abs(ev.clientX - sx) > 4 || Math.abs(ev.clientY - sy) > 4) {
+                    document.removeEventListener('mousemove', onMove)
+                    document.removeEventListener('mouseup', onUp)
+                    pillDragActiveRef.current = true
+                    startPillDragReorder(ev.clientX, ev.clientY, f.id, f.title, sortedDisplayRoots)
+                  }
                 }
+                function onUp() {
+                  document.removeEventListener('mousemove', onMove)
+                  document.removeEventListener('mouseup', onUp)
+                }
+                document.addEventListener('mousemove', onMove)
+                document.addEventListener('mouseup', onUp)
               }}
-              onMouseUp={() => { if (!pillEditMode) cancelPillLongPress() }}
               onClick={() => {
-                if (!drag && !pillEditMode) { setSelectedFolderId(f.id); setSearchQuery('') }
+                if (pillDragActiveRef.current) { pillDragActiveRef.current = false; return }
+                if (!drag) { setSelectedFolderId(f.id); setSearchQuery('') }
               }}
             >
               {f.title}
             </button>
-            {pillEditMode && (
-              <button
-                className="pill-close-btn"
-                onClick={(e) => { e.stopPropagation(); setDeleteFolderTarget({ id: f.id, title: f.title }) }}
-              >
-                ×
-              </button>
-            )}
           </div>
         ))}
         {!pillEditMode && (
@@ -813,12 +794,11 @@ export default function App() {
 
       {selectedFolderId && (
         <div className="subfolder-tabs">
-          {subFolders.map((f, i) => (
+          {subFolders.map((f) => (
             <div
               key={f.id}
               className={[
                 'subfolder-tab-wrapper',
-                subFolderEditMode ? 'subfolder-tab-wrapper--edit' : '',
                 subTabDraggingId === f.id ? 'subfolder-tab-wrapper--dragging' : '',
                 subTabDraggingId === f.id && subTabDropGapIndex !== null ? 'subfolder-tab-wrapper--collapsed' : '',
                 (() => {
@@ -841,38 +821,34 @@ export default function App() {
               <button
                 className={[
                   'subfolder-tab',
-                  subFolderEditMode ? 'subfolder-tab--edit' : '',
                   dropFolderId === f.id ? 'subfolder-tab--drop-active' : '',
                 ].filter(Boolean).join(' ')}
-                style={subFolderEditMode ? { animationDelay: `${(i % 3) * 0.07}s` } : undefined}
                 onMouseDown={(e) => {
                   if (e.button !== 0) return
-                  if (subFolderEditMode) {
-                    startSubTabDragReorder(e, f.id, f.title, subFolders)
-                  } else {
-                    startSubTabLongPress()
+                  const sx = e.clientX, sy = e.clientY
+                  function onMove(ev: MouseEvent) {
+                    if (Math.abs(ev.clientX - sx) > 4 || Math.abs(ev.clientY - sy) > 4) {
+                      document.removeEventListener('mousemove', onMove)
+                      document.removeEventListener('mouseup', onUp)
+                      subTabDragActiveRef.current = true
+                      startSubTabDragReorder(ev.clientX, ev.clientY, f.id, f.title, subFolders)
+                    }
                   }
+                  function onUp() {
+                    document.removeEventListener('mousemove', onMove)
+                    document.removeEventListener('mouseup', onUp)
+                  }
+                  document.addEventListener('mousemove', onMove)
+                  document.addEventListener('mouseup', onUp)
                 }}
-                onMouseUp={(e) => { if (!subFolderEditMode && e.button === 0) cancelSubTabLongPress() }}
                 onContextMenu={(e) => e.preventDefault()}
-                onMouseLeave={() => cancelSubTabLongPress()}
                 onClick={() => {
-                  if (!subFolderEditMode) {
-                    setSubFolderNavStack(s => [...s, f.id])
-                    setSubFolderEditMode(false)
-                  }
+                  if (subTabDragActiveRef.current) { subTabDragActiveRef.current = false; return }
+                  setSubFolderNavStack(s => [...s, f.id])
                 }}
               >
                 {f.title}
               </button>
-              {subFolderEditMode && (
-                <button
-                  className="subfolder-tab-close-btn"
-                  onClick={(e) => { e.stopPropagation(); setDeleteSubFolderTarget({ id: f.id, title: f.title }) }}
-                >
-                  ×
-                </button>
-              )}
             </div>
           ))}
         </div>

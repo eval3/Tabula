@@ -227,10 +227,6 @@ html, body, #root {
   80%  { transform: rotate(3deg); }
   100% { transform: rotate(0deg); }
 }
-.pill--edit {
-  animation: pill-wobble 0.8s ease-in-out infinite;
-  transform-origin: center bottom;
-}
 
 /* ── Add folder button ── */
 .pill-add-btn {
@@ -365,8 +361,6 @@ html, body, #root {
   transform: scale(1.15);
 }
 .subfolder-tab--edit {
-  animation: pill-wobble 0.8s ease-in-out infinite;
-  transform-origin: center bottom;
   cursor: grab;
 }
 .subfolder-tab--drop-active {
