@@ -84,7 +84,3 @@ npm run lint      # 代码检查
 - **Zustand**（状态管理）
 - **@anthropic-ai/sdk** + **openai**（AI 提供商客户端）
 - Chrome Extension **Manifest V3**
-
-## License
-
-MIT

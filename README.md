@@ -84,7 +84,3 @@ The project uses [CRXJS Vite Plugin](https://crxjs.dev/vite-plugin) for Chrome E
 - **Zustand** (state management)
 - **@anthropic-ai/sdk** + **openai** (AI provider clients)
 - Chrome Extension **Manifest V3**
-
-## License
-
-MIT
