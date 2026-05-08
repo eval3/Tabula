@@ -152,6 +152,24 @@ async function updateToast(tabId: number, message: string, type: 'success' | 'er
   }
 }
 
+// 整理分类进度 badge
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === 'organize:start') {
+    startSpinner()
+  } else if (msg?.type === 'organize:stop') {
+    if (msg.status === 'success') {
+      setBadge('✓', [22, 163, 74, 255])
+      clearBadgeAfter(3000)
+    } else if (msg.status === 'error') {
+      setBadge('✗', [220, 38, 38, 255])
+      clearBadgeAfter(3000)
+    } else {
+      stopSpinner()
+      chrome.action.setBadgeText({ text: '' })
+    }
+  }
+})
+
 // 快捷键：收藏当前页面并分类
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'classify-and-bookmark') return

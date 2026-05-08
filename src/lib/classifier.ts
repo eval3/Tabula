@@ -70,12 +70,13 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64, timeo
         baseURL: provider.baseURL,
         dangerouslyAllowBrowser: true,
       })
-      const res = await client.chat.completions.create({
+      const res = (await client.chat.completions.create({
         model: config.model,
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
+        stream: false,
         ...(config.providerId === 'deepseek' && { thinking: { type: 'disabled' } }),
-      } as Parameters<typeof client.chat.completions.create>[0], { signal: controller.signal })
+      }, { signal: controller.signal })) as any
       const choice = res.choices[0]?.message
       // DeepSeek R1 等模型有时内容在 reasoning_content 而非 content
       result = (choice?.content ?? (choice as unknown as Record<string, string>)?.reasoning_content ?? '').trim()

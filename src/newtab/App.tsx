@@ -53,6 +53,7 @@ export default function App() {
   const [renameValue, setRenameValue] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prevOrganizeStatusRef = useRef<OrganizeStatus>('idle')
   const dragRef = useRef<DragState | null>(null)
   const dropFolderRef = useRef<{ id: string; title: string } | null>(null)
   const subTabDragIdRef = useRef<string | null>(null)
@@ -136,6 +137,17 @@ export default function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [contextMenu])
+
+  useEffect(() => {
+    const prev = prevOrganizeStatusRef.current
+    prevOrganizeStatusRef.current = organizeStatus
+    if (organizeStatus === 'loading') {
+      chrome.runtime.sendMessage({ type: 'organize:start' })
+    } else if (prev === 'loading') {
+      const s = organizeStatus === 'success' ? 'success' : organizeStatus === 'error' ? 'error' : null
+      chrome.runtime.sendMessage({ type: 'organize:stop', status: s })
+    }
+  }, [organizeStatus])
 
   // Re-capture card rects after every slot position change so calcReorderInsertIdx
   // always works against current visual positions (not stale pre-shift coords).

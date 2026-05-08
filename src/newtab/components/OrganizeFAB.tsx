@@ -157,9 +157,24 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
         className={`fab-btn${isLoading ? ' loading' : ''}`}
         onClick={() => { if (!isLoading) setShowConfig(s => !s) }}
         disabled={isLoading}
+        title={isLoading ? `${progress.done}/${progress.total}` : undefined}
       >
         {isLoading ? (
-          <span className="fab-progress">{progress.done}/{progress.total}</span>
+          <svg className="fab-progress-ring" viewBox="0 0 56 56">
+            <circle className="fab-progress-bg" cx="28" cy="28" r="24" />
+            <circle
+              className="fab-progress-bar"
+              cx="28"
+              cy="28"
+              r="24"
+              style={{
+                strokeDasharray: `${(progress.done / progress.total) * 150.8} 150.8`,
+              }}
+            />
+            <text className="fab-progress-text" x="28" y="32">
+              {Math.round((progress.done / progress.total) * 100)}%
+            </text>
+          </svg>
         ) : (
           <span className="fab-icon">✦</span>
         )}
