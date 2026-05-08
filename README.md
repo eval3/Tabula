@@ -4,6 +4,8 @@ English | [中文](./README.zh-CN.md)
 
 > A Chrome extension that replaces your new tab page with an AI-powered bookmark manager — save, classify, and organize bookmarks effortlessly.
 
+![Smart Bookmark](./docs/banner.png)
+
 ## Features
 
 - **Smart New Tab** — Your bookmarks are always one tab away, organized in folders with instant search
