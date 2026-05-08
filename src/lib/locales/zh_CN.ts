@@ -92,6 +92,13 @@ const messages: Messages = {
   organizeCustom: '自定义偏好',
   organizeCustomPlaceholder: '例如：按工作/学习/娱乐分类；开发工具单独一类…',
   organizeStartBtn: '开始整理',
+  granularityHintCoarse: '5–8 个大类',
+  granularityHintMedium: '8–15 个分类',
+  granularityHintFine: '15+ 个专题文件夹',
+  classifyByHintTopic: '科技、购物、娱乐、教育…',
+  classifyByHintScenario: '工作、学习、生活、娱乐…',
+  classifyByHintType: '视频、文章、工具、文档…',
+  classifyByHintPlatform: 'GitHub、YouTube、知乎…',
   // Background toast
   toastClassifying: '正在智能分类收藏...',
   toastSaved: '已收藏到「{folder}」',

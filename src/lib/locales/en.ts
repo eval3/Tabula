@@ -90,6 +90,13 @@ const messages = {
   organizeCustom: 'Custom Instructions',
   organizeCustomPlaceholder: 'e.g. group by work/study/entertainment; keep dev tools separate…',
   organizeStartBtn: 'Start Organizing',
+  granularityHintCoarse: '5–8 major categories',
+  granularityHintMedium: '8–15 classifications',
+  granularityHintFine: '15+ specialized folders',
+  classifyByHintTopic: 'Tech, shopping, entertainment, education…',
+  classifyByHintScenario: 'Work, study, life, entertainment…',
+  classifyByHintType: 'Videos, articles, tools, documents…',
+  classifyByHintPlatform: 'GitHub, YouTube, Stack Overflow…',
   // Background toast
   toastClassifying: 'Classifying and saving...',
   toastSaved: 'Saved to 「{folder}」',

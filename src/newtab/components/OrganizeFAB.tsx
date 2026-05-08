@@ -80,9 +80,9 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
               ))}
             </div>
             <div className="fab-config-hint">
-              {prefs.granularity === 'coarse' && '5–8 个大类'}
-              {prefs.granularity === 'medium' && '8–15 个分类'}
-              {prefs.granularity === 'fine'   && '15+ 个专题文件夹'}
+              {prefs.granularity === 'coarse' && t('granularityHintCoarse')}
+              {prefs.granularity === 'medium' && t('granularityHintMedium')}
+              {prefs.granularity === 'fine'   && t('granularityHintFine')}
             </div>
           </div>
 
@@ -118,10 +118,10 @@ export default function OrganizeFAB({ status, progress, onOrganize }: Props) {
               ))}
             </div>
             <div className="fab-config-hint">
-              {prefs.classifyBy === 'topic'    && '科技、购物、娱乐、教育…'}
-              {prefs.classifyBy === 'scenario' && '工作、学习、生活、娱乐…'}
-              {prefs.classifyBy === 'type'     && '视频、文章、工具、文档…'}
-              {prefs.classifyBy === 'platform' && 'GitHub、YouTube、知乎…'}
+              {prefs.classifyBy === 'topic'    && t('classifyByHintTopic')}
+              {prefs.classifyBy === 'scenario' && t('classifyByHintScenario')}
+              {prefs.classifyBy === 'type'     && t('classifyByHintType')}
+              {prefs.classifyBy === 'platform' && t('classifyByHintPlatform')}
             </div>
           </div>
 
