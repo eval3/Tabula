@@ -163,20 +163,30 @@ ${bookmarks.map((b, i) => {
   return `${i + 1}. ${b.title} | ${shortUrl}`
 }).join('\n')}
 
-返回JSON数组 [{"folderName":"路径"}]，顺序与书签一致，路径最多两级，只返回JSON。`
+直接返回JSON数组，无其他文本：[{"folderName":"路径1"},{"folderName":"路径2"}]
+顺序与书签一致，路径最多两级，禁止添加任何解释或额外文本。`
 
   const text = await callLLM(config, prompt, 4096, BATCH_TIMEOUT_MS)
-  const jsonStr = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
+
+  // 提取 JSON 内容（处理前缀文本、markdown 代码块等）
+  const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/)
+  const jsonStr = jsonMatch ? jsonMatch[0] : text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
 
   let raw: Array<{ folderName: string }>
   try {
     raw = JSON.parse(jsonStr)
-  } catch {
+  } catch (err) {
+    console.error('[SmartBookmark] JSON 解析失败，原始响应:', text.slice(0, 200))
     // 响应被截断时，提取已完整解析的部分
     const lastBracket = jsonStr.lastIndexOf('},')
     const partial = lastBracket > 0 ? jsonStr.slice(0, lastBracket + 1) + ']' : '[]'
-    raw = JSON.parse(partial)
-    console.warn(`[SmartBookmark] JSON 截断，仅解析到 ${raw.length}/${bookmarks.length} 条`)
+    try {
+      raw = JSON.parse(partial)
+      console.warn(`[SmartBookmark] JSON 截断，仅解析到 ${raw.length}/${bookmarks.length} 条`)
+    } catch {
+      console.error('[SmartBookmark] 无法恢复 JSON，返回空数组')
+      raw = []
+    }
   }
 
   return raw.map((item, index) => ({
