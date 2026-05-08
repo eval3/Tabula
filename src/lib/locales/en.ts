@@ -48,6 +48,8 @@ const messages = {
   deleteBtn: 'Delete',
   modalNewSubFolder: 'New Subfolder',
   modalDeleteSubFolder: 'Delete Subfolder',
+  ctxMenuRename: 'Rename',
+  modalRenameFolder: 'Rename Folder',
   dragGhostFallback: 'Bookmark',
   // BookmarkCard
   editBookmarkTitle: 'Edit bookmark',

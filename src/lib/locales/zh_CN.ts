@@ -50,6 +50,8 @@ const messages: Messages = {
   deleteBtn: '删除',
   modalNewSubFolder: '新建子文件夹',
   modalDeleteSubFolder: '删除子文件夹',
+  ctxMenuRename: '重命名',
+  modalRenameFolder: '重命名文件夹',
   dragGhostFallback: '书签',
   // BookmarkCard
   editBookmarkTitle: '编辑书签',

@@ -48,6 +48,9 @@ export default function App() {
   const [subTabDraggingId, setSubTabDraggingId] = useState<string | null>(null)
   const [subTabDropGapIndex, setSubTabDropGapIndex] = useState<number | null>(null)
   const [subTabGhost, setSubTabGhost] = useState<{ title: string; x: number; y: number } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ id: string; title: string; type: 'pill' | 'subtab'; x: number; y: number } | null>(null)
+  const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -126,6 +129,13 @@ export default function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [subFolderEditMode])
+
+  useEffect(() => {
+    if (!contextMenu) return
+    function handleClick() { setContextMenu(null) }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [contextMenu])
 
   // Re-capture card rects after every slot position change so calcReorderInsertIdx
   // always works against current visual positions (not stale pre-shift coords).
@@ -243,6 +253,15 @@ export default function App() {
     if (selectedFolderId === deleteFolderTarget.id) setSelectedFolderId(null)
     setDeleteFolderTarget(null)
     setPillEditMode(false)
+    await loadTree()
+  }
+
+  async function handleRenameFolder() {
+    const name = renameValue.trim()
+    if (!name || !renameTarget) return
+    await chrome.bookmarks.update(renameTarget.id, { title: name })
+    setRenameTarget(null)
+    setRenameValue('')
     await loadTree()
   }
 
@@ -599,6 +618,38 @@ export default function App() {
         <div className="move-toast">{moveToast}</div>
       )}
 
+      {contextMenu && (
+        <div
+          className="ctx-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <button
+            className="ctx-menu-item"
+            onClick={() => {
+              setRenameTarget({ id: contextMenu.id, title: contextMenu.title })
+              setRenameValue(contextMenu.title)
+              setContextMenu(null)
+            }}
+          >
+            {t('ctxMenuRename')}
+          </button>
+          <button
+            className="ctx-menu-item ctx-menu-item--danger"
+            onClick={() => {
+              if (contextMenu.type === 'pill') {
+                setDeleteFolderTarget({ id: contextMenu.id, title: contextMenu.title })
+              } else {
+                setDeleteSubFolderTarget({ id: contextMenu.id, title: contextMenu.title })
+              }
+              setContextMenu(null)
+            }}
+          >
+            {t('deleteBtn')}
+          </button>
+        </div>
+      )}
+
       {drag && (
         <div
           className="drag-ghost"
@@ -704,6 +755,12 @@ export default function App() {
                 }
                 document.addEventListener('mousemove', onMove)
                 document.addEventListener('mouseup', onUp)
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                const x = Math.min(e.clientX, window.innerWidth - 140)
+                const y = Math.min(e.clientY, window.innerHeight - 80)
+                setContextMenu({ id: f.id, title: f.title, type: 'pill', x, y })
               }}
               onClick={() => {
                 if (pillDragActiveRef.current) { pillDragActiveRef.current = false; return }
@@ -841,7 +898,12 @@ export default function App() {
                   document.addEventListener('mousemove', onMove)
                   document.addEventListener('mouseup', onUp)
                 }}
-                onContextMenu={(e) => e.preventDefault()}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  const x = Math.min(e.clientX, window.innerWidth - 140)
+                  const y = Math.min(e.clientY, window.innerHeight - 80)
+                  setContextMenu({ id: f.id, title: f.title, type: 'subtab', x, y })
+                }}
                 onClick={() => {
                   if (subTabDragActiveRef.current) { subTabDragActiveRef.current = false; return }
                   setSubFolderNavStack(s => [...s, f.id])
@@ -1011,6 +1073,36 @@ export default function App() {
             <div className="modal-footer">
               <button className="modal-btn cancel" onClick={() => setDeleteSubFolderTarget(null)}>{t('cancelBtn')}</button>
               <button className="modal-btn danger" onClick={handleDeleteSubFolder}>{t('deleteBtn')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renameTarget && (
+        <div className="modal-overlay" onClick={() => { setRenameTarget(null); setRenameValue('') }}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{t('modalRenameFolder')}</h3>
+              <button className="modal-close" onClick={() => { setRenameTarget(null); setRenameValue('') }}>×</button>
+            </div>
+            <div className="modal-body">
+              <label className="modal-label">{t('folderNameLabel')}</label>
+              <input
+                className="modal-input"
+                type="text"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleRenameFolder() }}
+                autoFocus
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn cancel" onClick={() => { setRenameTarget(null); setRenameValue('') }}>{t('cancelBtn')}</button>
+              <button
+                className="modal-btn save"
+                onClick={handleRenameFolder}
+                disabled={!renameValue.trim() || renameValue.trim() === renameTarget.title}
+              >{t('saveBtn')}</button>
             </div>
           </div>
         </div>

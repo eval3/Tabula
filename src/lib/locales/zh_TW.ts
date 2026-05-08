@@ -50,6 +50,8 @@ const messages: Messages = {
   deleteBtn: '刪除',
   modalNewSubFolder: '新建子資料夾',
   modalDeleteSubFolder: '刪除子資料夾',
+  ctxMenuRename: '重新命名',
+  modalRenameFolder: '重新命名資料夾',
   dragGhostFallback: '書籤',
   // BookmarkCard
   editBookmarkTitle: '編輯書籤',

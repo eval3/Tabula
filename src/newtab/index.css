@@ -991,6 +991,45 @@ html, body, #root {
   cursor: grabbing !important;
 }
 
+/* ── Context menu ── */
+.ctx-menu {
+  position: fixed;
+  z-index: 500;
+  background: #1e1530;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  padding: 4px;
+  min-width: 120px;
+  animation: ctx-menu-in 0.1s ease;
+}
+@keyframes ctx-menu-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.ctx-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ctx-menu-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+.ctx-menu-item--danger {
+  color: #f87171;
+}
+.ctx-menu-item--danger:hover {
+  background: rgba(239,68,68,0.12);
+}
+
 /* ── Move toast ── */
 .move-toast {
   position: fixed;
