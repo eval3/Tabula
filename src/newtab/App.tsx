@@ -516,7 +516,7 @@ export default function App() {
   async function doMove(bookmarkId: string, folderId: string, folderTitle: string) {
     setExitingId(bookmarkId)
     setTimeout(async () => {
-      await chrome.bookmarks.move(bookmarkId, { parentId: folderId })
+      await chrome.bookmarks.move(bookmarkId, { parentId: folderId, index: 0 })
       setExitingId(null)
       await loadTree()
       if (toastTimer.current) clearTimeout(toastTimer.current)
