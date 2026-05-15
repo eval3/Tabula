@@ -27,7 +27,7 @@ interface Props {
 
 export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLongPress, isDragging, isExiting, isDimmed }: Props) {
   const url = bookmark.url ?? ''
-  const longPress = useLongPress((pos) => onLongPress?.(pos))
+  const longPress = useLongPress(onLongPress)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(bookmark.title)
   const [editFolderId, setEditFolderId] = useState<string>('')

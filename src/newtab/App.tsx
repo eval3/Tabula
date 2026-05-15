@@ -978,7 +978,7 @@ export default function App() {
               folders={folderOptions}
               tree={bookmarkTree}
               onUpdated={loadTree}
-              onLongPress={(pos) => startDrag(b.id, b.title, pos)}
+              onLongPress={isRecentView ? undefined : (pos) => startDrag(b.id, b.title, pos)}
               isDragging={drag?.bookmarkId === b.id}
               isExiting={exitingId === b.id}
               isDimmed={
