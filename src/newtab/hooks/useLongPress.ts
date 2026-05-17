@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 
 export function useLongPress(
-  onLongPress: (pos: { x: number; y: number }) => void,
+  onLongPress: ((pos: { x: number; y: number }) => void) | undefined,
   delay = 400
 ) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -10,6 +10,7 @@ export function useLongPress(
 
   function start(e: React.MouseEvent) {
     if (e.button !== 0) return
+    if (!onLongPress) return
     triggered.current = false
     startPos.current = { x: e.clientX, y: e.clientY }
 

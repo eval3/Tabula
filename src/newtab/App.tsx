@@ -516,7 +516,7 @@ export default function App() {
   async function doMove(bookmarkId: string, folderId: string, folderTitle: string) {
     setExitingId(bookmarkId)
     setTimeout(async () => {
-      await chrome.bookmarks.move(bookmarkId, { parentId: folderId })
+      await chrome.bookmarks.move(bookmarkId, { parentId: folderId, index: 0 })
       setExitingId(null)
       await loadTree()
       if (toastTimer.current) clearTimeout(toastTimer.current)
@@ -978,7 +978,7 @@ export default function App() {
               folders={folderOptions}
               tree={bookmarkTree}
               onUpdated={loadTree}
-              onLongPress={(pos) => startDrag(b.id, b.title, pos)}
+              onLongPress={isRecentView ? undefined : (pos) => startDrag(b.id, b.title, pos)}
               isDragging={drag?.bookmarkId === b.id}
               isExiting={exitingId === b.id}
               isDimmed={
