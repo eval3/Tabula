@@ -84,7 +84,7 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
     setShowFolderPicker(false)
     const currentParentId = findParentFolderId(bookmark.id, folders)
     if (folderId !== currentParentId) {
-      await chrome.bookmarks.move(bookmark.id, { parentId: folderId })
+      await chrome.bookmarks.move(bookmark.id, { parentId: folderId, index: 0 })
       onUpdated()
     }
   }
