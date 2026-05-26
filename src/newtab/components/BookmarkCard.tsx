@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { BookmarkNode } from '../utils'
 import { useLongPress } from '../hooks/useLongPress'
 import { t } from '../../lib/i18n'
@@ -29,7 +29,9 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
   const url = bookmark.url ?? ''
   const longPress = useLongPress(onLongPress)
   const [editing, setEditing] = useState(false)
+  const [pickingFolder, setPickingFolder] = useState(false)
   const [editTitle, setEditTitle] = useState(bookmark.title)
+  const [editUrl, setEditUrl] = useState(url)
   const [editFolderId, setEditFolderId] = useState<string>('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showFolderPicker, setShowFolderPicker] = useState(false)
@@ -48,23 +50,31 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
     ? PALETTE[hashCode(bookmark.folderName) % PALETTE.length]
     : undefined
 
+  function closeEdit() {
+    setEditing(false)
+    setPickingFolder(false)
+  }
+
   function openEdit(e: React.MouseEvent) {
     e.stopPropagation()
     setEditTitle(bookmark.title)
+    setEditUrl(url)
     setEditFolderId(findParentFolderId(bookmark.id, folders))
+    setPickingFolder(false)
     setEditing(true)
   }
 
   async function handleSave() {
     const newTitle = editTitle.trim() || bookmark.title
-    if (newTitle !== bookmark.title) {
-      await chrome.bookmarks.update(bookmark.id, { title: newTitle })
+    const newUrl = editUrl.trim() || url
+    if (newTitle !== bookmark.title || newUrl !== url) {
+      await chrome.bookmarks.update(bookmark.id, { title: newTitle, url: newUrl })
     }
     const currentParentId = findParentFolderId(bookmark.id, folders)
-    if (editFolderId && editFolderId !== currentParentId) {
+    if (editFolderId !== currentParentId) {
       await chrome.bookmarks.move(bookmark.id, { parentId: editFolderId })
     }
-    setEditing(false)
+    closeEdit()
     onUpdated()
   }
 
@@ -154,37 +164,64 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
       )}
 
       {editing && (
-        <div className="modal-overlay" onClick={() => setEditing(false)}>
+        <div className="modal-overlay" onClick={closeEdit}>
           <div className="modal-dialog" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{t('modalEditBookmark')}</h3>
-              <button className="modal-close" onClick={() => setEditing(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <label className="modal-label">{t('nameLabel')}</label>
-              <input
-                className="modal-input"
-                type="text"
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value)}
-                placeholder={t('bookmarkNamePlaceholder')}
-              />
-              <label className="modal-label">{t('groupLabel')}</label>
-              <select
-                className="modal-select"
-                value={editFolderId}
-                onChange={e => setEditFolderId(e.target.value)}
-              >
-                <option value="">{t('noChangeOption')}</option>
-                {folders.map(f => (
-                  <option key={f.id} value={f.id}>{f.title}</option>
-                ))}
-              </select>
-            </div>
-            <div className="modal-footer">
-              <button className="modal-btn cancel" onClick={() => setEditing(false)}>{t('cancelBtn')}</button>
-              <button className="modal-btn save" onClick={handleSave}>{t('saveBtn')}</button>
-            </div>
+            {!pickingFolder ? (
+              <>
+                <div className="modal-header">
+                  <h3>{t('modalEditBookmark')}</h3>
+                  <button className="modal-close" onClick={closeEdit}>×</button>
+                </div>
+                <div className="modal-body">
+                  <label className="modal-label">{t('nameLabel')}</label>
+                  <input
+                    className="modal-input"
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder={t('bookmarkNamePlaceholder')}
+                  />
+                  <label className="modal-label">{t('urlLabel')}</label>
+                  <input
+                    className="modal-input"
+                    type="url"
+                    value={editUrl}
+                    onChange={e => setEditUrl(e.target.value)}
+                    placeholder={t('bookmarkUrlPlaceholder')}
+                  />
+                  <label className="modal-label">{t('groupLabel')}</label>
+                  <button className="modal-folder-btn" onClick={() => setPickingFolder(true)}>
+                    <span>{folders.find(f => f.id === editFolderId)?.title ?? ''}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 6 15 12 9 18" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="modal-footer">
+                  <button className="modal-btn cancel" onClick={closeEdit}>{t('cancelBtn')}</button>
+                  <button className="modal-btn save" onClick={handleSave}>{t('saveBtn')}</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="modal-header modal-header--sub">
+                  <button className="modal-back-btn" onClick={() => setPickingFolder(false)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <h3>{t('groupLabel')}</h3>
+                  <button className="modal-close" onClick={closeEdit}>×</button>
+                </div>
+                <div className="modal-body modal-body--tree">
+                  <InlineFolderTree
+                    tree={tree}
+                    selectedId={editFolderId}
+                    onSelect={(id) => { setEditFolderId(id); setPickingFolder(false) }}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -343,6 +380,69 @@ function FolderTreePicker({
       </div>
     </>
   )
+}
+
+function InlineFolderTree({
+  tree,
+  selectedId,
+  onSelect,
+}: {
+  tree: BookmarkNode[]
+  selectedId: string
+  onSelect: (id: string) => void
+}) {
+  const selectedRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    selectedRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [])
+
+  function renderNodes(nodes: BookmarkNode[], depth: number): React.ReactNode[] {
+    const result: React.ReactNode[] = []
+    for (const node of nodes) {
+      if (node.url) continue
+      const isSys = SYS_IDS.has(node.id) || SYS_TITLES.has(node.title)
+      if (isSys) {
+        if (node.title) {
+          result.push(
+            <div key={`sec-${node.id}`} className="modal-tree-section">
+              {node.title}
+            </div>
+          )
+        }
+        if (node.children) result.push(...renderNodes(node.children, depth))
+        continue
+      }
+      const isSelected = node.id === selectedId
+      const leftPad = 10 + depth * 14
+      result.push(
+        <div
+          key={node.id}
+          ref={isSelected ? selectedRef : undefined}
+          className={`modal-tree-row${isSelected ? ' modal-tree-row--selected' : ''}`}
+          style={{ paddingLeft: leftPad }}
+          onClick={() => onSelect(node.id)}
+        >
+          {Array.from({ length: depth }).map((_, i) => (
+            <span key={i} className="modal-tree-guide" style={{ left: 10 + i * 14 + 5 }} aria-hidden />
+          ))}
+          <svg className="modal-tree-folder-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+          </svg>
+          <span className="modal-tree-name">{node.title}</span>
+          {isSelected && (
+            <svg className="modal-tree-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </div>
+      )
+      if (node.children) result.push(...renderNodes(node.children, depth + 1))
+    }
+    return result
+  }
+
+  return <div className="modal-tree">{renderNodes(tree, 0)}</div>
 }
 
 function findParentFolderId(bookmarkId: string, folders: BookmarkNode[]): string {

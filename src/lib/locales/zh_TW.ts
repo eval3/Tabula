@@ -63,6 +63,8 @@ const messages: Messages = {
   modalEditBookmark: '編輯書籤',
   nameLabel: '名稱',
   bookmarkNamePlaceholder: '書籤名稱',
+  urlLabel: '網址',
+  bookmarkUrlPlaceholder: 'https://example.com',
   groupLabel: '分組',
   noChangeOption: '不修改',
   saveBtn: '儲存',

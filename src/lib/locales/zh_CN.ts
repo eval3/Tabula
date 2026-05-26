@@ -63,6 +63,8 @@ const messages: Messages = {
   modalEditBookmark: '编辑书签',
   nameLabel: '名称',
   bookmarkNamePlaceholder: '书签名称',
+  urlLabel: '网址',
+  bookmarkUrlPlaceholder: 'https://example.com',
   groupLabel: '分组',
   noChangeOption: '不修改',
   saveBtn: '保存',

@@ -61,6 +61,8 @@ const messages = {
   modalEditBookmark: 'Edit Bookmark',
   nameLabel: 'Name',
   bookmarkNamePlaceholder: 'Bookmark name',
+  urlLabel: 'URL',
+  bookmarkUrlPlaceholder: 'https://example.com',
   groupLabel: 'Group',
   noChangeOption: 'Keep unchanged',
   saveBtn: 'Save',

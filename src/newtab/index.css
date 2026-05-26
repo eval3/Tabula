@@ -1120,6 +1120,130 @@ html, body, #root {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ── Modal folder button (replaces select) ── */
+.modal-folder-btn {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+.modal-folder-btn:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+
+/* ── Modal sub-page header (with back button) ── */
+.modal-header--sub { gap: 0; }
+.modal-header--sub h3 { flex: 1; text-align: center; font-size: 14px; }
+.modal-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.modal-back-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+/* ── Tree container ── */
+.modal-body--tree {
+  padding: 4px 0 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.10) transparent;
+}
+
+/* ── Section label ── */
+.modal-tree-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.20);
+}
+.modal-tree-section::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+}
+
+/* ── Folder row ── */
+.modal-tree-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  margin: 0 6px;
+  padding-right: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.46);
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  user-select: none;
+}
+.modal-tree-row:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.88); }
+.modal-tree-row--selected {
+  background: rgba(255,104,69,0.09);
+  color: #fff;
+  box-shadow: inset 2.5px 0 0 var(--accent), inset 10px 0 18px rgba(255,104,69,0.06);
+}
+.modal-tree-row--selected:hover { background: rgba(255,104,69,0.13); }
+
+/* ── Depth guide lines ── */
+.modal-tree-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.07);
+  pointer-events: none;
+}
+
+/* ── Folder icon ── */
+.modal-tree-folder-icon {
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.30);
+  transition: color 0.12s;
+}
+.modal-tree-row:hover .modal-tree-folder-icon { color: rgba(255,255,255,0.55); }
+.modal-tree-row--selected .modal-tree-folder-icon { color: var(--accent); }
+
+/* ── Name ── */
+.modal-tree-name {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.modal-tree-row--selected .modal-tree-name { font-weight: 500; }
+
+/* ── Check mark ── */
+.modal-tree-check { flex-shrink: 0; color: var(--accent); }
+
 /* ── Organize preview modal ── */
 .modal-dialog--wide {
   width: 520px;
