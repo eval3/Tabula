@@ -713,11 +713,6 @@ export default function App() {
         </div>
       )}
 
-      <div className="app-header">
-        <img src="/icons/logo.png" className="app-logo" alt="" />
-        <h1 className="app-title">{t('appName')}</h1>
-      </div>
-
       <div className="search-wrapper">
         <div className="search-box">
           <span className="search-icon">🔍</span>
@@ -821,7 +816,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="section-header">
+      <div className={`section-header${isBaseRecentView ? ' section-header--recent' : ''}`}>
         <h2 className="section-title">
           {isBaseRecentView ? (
             <div className="recent-toggle">
