@@ -40,6 +40,8 @@ const messages: Messages = {
   noMatchBookmarks: '沒有符合的書籤',
   searchResultTitle: '搜尋「{query}」',
   recentAddedTitle: '最近新增',
+  recentlyUsedPill: '最近使用',
+  recentlyUsedTitle: '最近使用',
   modalNewFolder: '新建資料夾',
   folderNameLabel: '資料夾名稱',
   folderNamePlaceholder: '請輸入資料夾名稱',

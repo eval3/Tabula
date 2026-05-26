@@ -40,6 +40,8 @@ const messages: Messages = {
   noMatchBookmarks: '没有匹配的书签',
   searchResultTitle: '搜索"{query}"',
   recentAddedTitle: '最近添加',
+  recentlyUsedPill: '最近使用',
+  recentlyUsedTitle: '最近使用',
   modalNewFolder: '新建文件夹',
   folderNameLabel: '文件夹名称',
   folderNamePlaceholder: '请输入文件夹名称',

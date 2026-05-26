@@ -38,6 +38,8 @@ const messages = {
   noMatchBookmarks: 'No matching bookmarks',
   searchResultTitle: 'Search "{query}"',
   recentAddedTitle: 'Recently Added',
+  recentlyUsedPill: 'Recently Used',
+  recentlyUsedTitle: 'Recently Used',
   modalNewFolder: 'New Folder',
   folderNameLabel: 'Folder name',
   folderNamePlaceholder: 'Enter folder name',

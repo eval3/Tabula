@@ -117,6 +117,41 @@ export function getBookmarkPath(bookmarkId: string, tree: BookmarkNode[]): strin
   return walk(tree, [])
 }
 
+export async function getRecentlyUsedBookmarks(
+  tree: BookmarkNode[],
+  limit = 20,
+  months = 1
+): Promise<BookmarkNode[]> {
+  const urlMap = new Map<string, BookmarkNode>()
+  function traverse(nodes: BookmarkNode[]) {
+    for (const node of nodes) {
+      if (node.url) urlMap.set(node.url, node)
+      if (node.children) traverse(node.children)
+    }
+  }
+  traverse(tree)
+  if (urlMap.size === 0) return []
+
+  const historyItems = await chrome.history.search({
+    text: '',
+    maxResults: 1000,
+    startTime: Date.now() - months * 30 * 24 * 60 * 60 * 1000,
+  })
+
+  const seen = new Set<string>()
+  const result: BookmarkNode[] = []
+  for (const item of historyItems) {
+    if (!item.url) continue
+    const node = urlMap.get(item.url)
+    if (node && !seen.has(node.id)) {
+      seen.add(node.id)
+      result.push(node)
+      if (result.length >= limit) break
+    }
+  }
+  return result
+}
+
 export function getAllFolders(tree: BookmarkNode[]): BookmarkNode[] {
   const folders: BookmarkNode[] = []
   function traverse(nodes: BookmarkNode[]) {

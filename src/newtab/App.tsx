@@ -3,7 +3,7 @@ import BookmarkCard from './components/BookmarkCard'
 import OrganizeFAB from './components/OrganizeFAB'
 import {
   getDisplayRoots, searchBookmarks, findNodeById,
-  getRecentBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
+  getRecentBookmarks, getRecentlyUsedBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
   type BookmarkNode,
 } from './utils'
 import { previewOrganize, applyOrganize, type OrganizeStatus, type OrganizeProgress, type PreviewItem, type OrganizePrefs } from '../lib/organize'
@@ -25,6 +25,10 @@ export default function App() {
   const [organizePreview, setOrganizePreview] = useState<PreviewItem[] | null>(null)
   const [recentMonths, setRecentMonths] = useState(1)
   const [recentOpen, setRecentOpen] = useState(false)
+  const [showRecentlyUsed, setShowRecentlyUsed] = useState(true)
+  const [recentlyUsedBookmarks, setRecentlyUsedBookmarks] = useState<BookmarkNode[]>([])
+  const [recentlyUsedMonths, setRecentlyUsedMonths] = useState(1)
+  const [recentlyUsedOpen, setRecentlyUsedOpen] = useState(false)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [dropFolderId, setDropFolderId] = useState<string | null>(null)
   const [exitingId, setExitingId] = useState<string | null>(null)
@@ -52,6 +56,7 @@ export default function App() {
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const usedDropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevOrganizeStatusRef = useRef<OrganizeStatus>('idle')
   const dragRef = useRef<DragState | null>(null)
@@ -103,6 +108,22 @@ export default function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [recentOpen])
+
+  useEffect(() => {
+    if (!recentlyUsedOpen) return
+    function handleClick(e: MouseEvent) {
+      if (usedDropdownRef.current && !usedDropdownRef.current.contains(e.target as Node)) {
+        setRecentlyUsedOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [recentlyUsedOpen])
+
+  useEffect(() => {
+    if (!showRecentlyUsed || !bookmarkTree.length) return
+    getRecentlyUsedBookmarks(bookmarkTree, 20, recentlyUsedMonths).then(setRecentlyUsedBookmarks)
+  }, [showRecentlyUsed, bookmarkTree, recentlyUsedMonths])
 
   useEffect(() => {
     if (!pillEditMode) return
@@ -563,19 +584,21 @@ export default function App() {
 
   const displayedBookmarks = useMemo(() => {
     if (searchQuery.trim()) return searchBookmarks(searchQuery, bookmarkTree)
+    if (showRecentlyUsed) return recentlyUsedBookmarks
     if (selectedFolderId) {
       const folder = findNodeById(currentViewFolderId!, bookmarkTree)
       return folder ? getAllBookmarksInFolder(folder) : []
     }
     return getRecentBookmarks(bookmarkTree, recentMonths)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths])
+  }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths, showRecentlyUsed, recentlyUsedBookmarks])
 
   const sectionTitle = useMemo(() => {
     if (searchQuery.trim()) return t('searchResultTitle', { query: searchQuery })
+    if (showRecentlyUsed) return t('recentlyUsedTitle')
     if (!selectedFolderId) return t('recentAddedTitle')
     return null
-  }, [searchQuery, selectedFolderId])
+  }, [searchQuery, selectedFolderId, showRecentlyUsed])
 
   const breadcrumbParts = useMemo(() => {
     if (!selectedFolderId) return []
@@ -589,7 +612,8 @@ export default function App() {
     return parts
   }, [selectedFolderId, subFolderNavStack, bookmarkTree])
 
-  const isRecentView = !searchQuery.trim() && !selectedFolderId
+  const isBaseRecentView = !searchQuery.trim() && !selectedFolderId
+  const isRecentView = isBaseRecentView && !showRecentlyUsed
 
   const folderOptions = useMemo(() => getAllFolders(bookmarkTree), [bookmarkTree])
 
@@ -703,7 +727,7 @@ export default function App() {
             value={searchQuery}
             onChange={e => {
               setSearchQuery(e.target.value)
-              if (e.target.value.trim()) setSelectedFolderId(null)
+              if (e.target.value.trim()) { setSelectedFolderId(null); setShowRecentlyUsed(false) }
             }}
           />
           {searchQuery && (
@@ -776,7 +800,7 @@ export default function App() {
               }}
               onClick={() => {
                 if (pillDragActiveRef.current) { pillDragActiveRef.current = false; return }
-                if (!drag) { setSelectedFolderId(f.id); setSearchQuery('') }
+                if (!drag) { setSelectedFolderId(f.id); setSearchQuery(''); setShowRecentlyUsed(false) }
               }}
             >
               {f.title}
@@ -799,7 +823,22 @@ export default function App() {
 
       <div className="section-header">
         <h2 className="section-title">
-          {breadcrumbParts.length > 0 ? (
+          {isBaseRecentView ? (
+            <div className="recent-toggle">
+              <button
+                className={`recent-toggle-btn${showRecentlyUsed ? ' active' : ''}`}
+                onClick={() => setShowRecentlyUsed(true)}
+              >
+                {t('recentlyUsedTitle')}
+              </button>
+              <button
+                className={`recent-toggle-btn${!showRecentlyUsed ? ' active' : ''}`}
+                onClick={() => setShowRecentlyUsed(false)}
+              >
+                {t('recentAddedTitle')}
+              </button>
+            </div>
+          ) : breadcrumbParts.length > 0 ? (
             <span className="breadcrumb-row">
               {breadcrumbParts.map((part, i) => (
                 <span key={part.id} className="breadcrumb-item">
@@ -820,26 +859,33 @@ export default function App() {
           ) : sectionTitle}
         </h2>
         <span className="section-count">{t('bookmarkCount', { count: bookmarksWithFolder.length })}</span>
-        {isRecentView && (
-          <div className="recent-dropdown" ref={dropdownRef}>
+        {isBaseRecentView && (
+          <div className="recent-dropdown" ref={showRecentlyUsed ? usedDropdownRef : dropdownRef}>
             <button
-              className={`recent-dropdown-trigger${recentOpen ? ' open' : ''}`}
-              onClick={() => setRecentOpen(o => !o)}
+              className={`recent-dropdown-trigger${(showRecentlyUsed ? recentlyUsedOpen : recentOpen) ? ' open' : ''}`}
+              onClick={() => showRecentlyUsed ? setRecentlyUsedOpen(o => !o) : setRecentOpen(o => !o)}
             >
-              {t('recentMonths', { m: recentMonths })}
-              <svg className={`recent-dropdown-chevron${recentOpen ? ' open' : ''}`} xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {t('recentMonths', { m: showRecentlyUsed ? recentlyUsedMonths : recentMonths })}
+              <svg
+                className={`recent-dropdown-chevron${(showRecentlyUsed ? recentlyUsedOpen : recentOpen) ? ' open' : ''}`}
+                xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            {recentOpen && (
+            {(showRecentlyUsed ? recentlyUsedOpen : recentOpen) && (
               <div className="recent-dropdown-menu">
                 {([1, 3] as const).map(m => (
                   <button
                     key={m}
-                    className={`recent-dropdown-item${recentMonths === m ? ' selected' : ''}`}
-                    onClick={() => { setRecentMonths(m); setRecentOpen(false) }}
+                    className={`recent-dropdown-item${(showRecentlyUsed ? recentlyUsedMonths : recentMonths) === m ? ' selected' : ''}`}
+                    onClick={() => {
+                      if (showRecentlyUsed) { setRecentlyUsedMonths(m); setRecentlyUsedOpen(false) }
+                      else { setRecentMonths(m); setRecentOpen(false) }
+                    }}
                   >
-                    {recentMonths === m && <span className="recent-dropdown-check">✓</span>}
+                    {(showRecentlyUsed ? recentlyUsedMonths : recentMonths) === m && <span className="recent-dropdown-check">✓</span>}
                     {t('recentMonths', { m })}
                   </button>
                 ))}
@@ -978,7 +1024,7 @@ export default function App() {
               folders={folderOptions}
               tree={bookmarkTree}
               onUpdated={loadTree}
-              onLongPress={isRecentView ? undefined : (pos) => startDrag(b.id, b.title, pos)}
+              onLongPress={(isRecentView || showRecentlyUsed) ? undefined : (pos) => startDrag(b.id, b.title, pos)}
               isDragging={drag?.bookmarkId === b.id}
               isExiting={exitingId === b.id}
               isDimmed={
