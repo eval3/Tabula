@@ -36,6 +36,30 @@ html, body, #root {
   padding: 48px 24px 100px;
 }
 
+/* ── Brand ── */
+.brand {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.brand-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.01em;
+}
+
 /* ── Search ── */
 .search-wrapper {
   width: 100%;

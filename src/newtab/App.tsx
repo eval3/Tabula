@@ -713,6 +713,11 @@ export default function App() {
         </div>
       )}
 
+      <div className="brand">
+        <img className="brand-icon" src="/icons/icon48.png" alt="" />
+        <span className="brand-name">Smart Bookmark</span>
+      </div>
+
       <div className="search-wrapper">
         <div className="search-box">
           <span className="search-icon">🔍</span>
