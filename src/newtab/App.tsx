@@ -122,7 +122,7 @@ export default function App() {
 
   useEffect(() => {
     if (!showRecentlyUsed || !bookmarkTree.length) return
-    getRecentlyUsedBookmarks(bookmarkTree, 20, recentlyUsedMonths).then(setRecentlyUsedBookmarks)
+    getRecentlyUsedBookmarks(bookmarkTree, recentlyUsedMonths).then(setRecentlyUsedBookmarks)
   }, [showRecentlyUsed, bookmarkTree, recentlyUsedMonths])
 
   useEffect(() => {

@@ -119,7 +119,6 @@ export function getBookmarkPath(bookmarkId: string, tree: BookmarkNode[]): strin
 
 export async function getRecentlyUsedBookmarks(
   tree: BookmarkNode[],
-  limit = 20,
   months = 1
 ): Promise<BookmarkNode[]> {
   const urlMap = new Map<string, BookmarkNode>()
@@ -134,7 +133,7 @@ export async function getRecentlyUsedBookmarks(
 
   const historyItems = await chrome.history.search({
     text: '',
-    maxResults: 1000,
+    maxResults: 10000,
     startTime: Date.now() - months * 30 * 24 * 60 * 60 * 1000,
   })
 
@@ -146,7 +145,6 @@ export async function getRecentlyUsedBookmarks(
     if (node && !seen.has(node.id)) {
       seen.add(node.id)
       result.push(node)
-      if (result.length >= limit) break
     }
   }
   return result
