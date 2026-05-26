@@ -727,7 +727,7 @@ export default function App() {
             value={searchQuery}
             onChange={e => {
               setSearchQuery(e.target.value)
-              if (e.target.value.trim()) { setSelectedFolderId(null); setShowRecentlyUsed(false) }
+              if (e.target.value.trim()) { setShowRecentlyUsed(false) }
             }}
           />
           {searchQuery && (
