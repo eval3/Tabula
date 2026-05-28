@@ -1,10 +1,10 @@
-# Smart Bookmark
+# Tabula
 
 English | [中文](./README.zh-CN.md)
 
 > A Chrome extension that replaces your new tab page with an AI-powered bookmark manager — save, classify, and organize bookmarks effortlessly.
 
-![Smart Bookmark](./docs/banner.png)
+![Tabula](./docs/banner.png)
 
 ## Features
 

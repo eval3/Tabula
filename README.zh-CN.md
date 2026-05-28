@@ -1,10 +1,10 @@
-# Smart Bookmark
+# Tabula
 
 [English](./README.md) | 中文
 
 > 将新标签页变成 AI 驱动的书签管理器 —— 智能收藏、自动分类、一键整理。
 
-![Smart Bookmark](./docs/banner.png)
+![Tabula](./docs/banner.png)
 
 ## 功能特性
 
