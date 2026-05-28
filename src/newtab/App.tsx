@@ -16,7 +16,30 @@ interface DragState {
   y: number
 }
 
+type BgType = 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
+
+const BG_OPTIONS: { id: BgType; label: string; cls: string }[] = [
+  { id: 'gradient', label: '极光',   cls: 'bg-option-gradient'  },
+  { id: 'mountain', label: '山景',   cls: 'bg-option-mountain'  },
+  { id: 'forest',   label: '森林',   cls: 'bg-option-forest'    },
+  { id: 'ocean',    label: '海洋',   cls: 'bg-option-ocean'     },
+  { id: 'desert',   label: '沙漠',   cls: 'bg-option-desert'    },
+  { id: 'aurora',   label: '极光云', cls: 'bg-option-aurora'    },
+  { id: 'lavender', label: '薰衣草', cls: 'bg-option-lavender'  },
+  { id: 'autumn',   label: '秋景',   cls: 'bg-option-autumn'    },
+  { id: 'snow',     label: '雪山',   cls: 'bg-option-snow'      },
+  { id: 'sunset',   label: '日落',   cls: 'bg-option-sunset'    },
+  { id: 'tropical', label: '热带',   cls: 'bg-option-tropical'  },
+  { id: 'lake',     label: '湖泊',   cls: 'bg-option-lake'      },
+  { id: 'hills',    label: '草原',   cls: 'bg-option-hills'     },
+]
+
 export default function App() {
+  const [bg, setBg] = useState<BgType>(() =>
+    (localStorage.getItem('sbBg') as BgType) || 'gradient'
+  )
+  const [bgPanelOpen, setBgPanelOpen] = useState(false)
+  const bgPanelRef = useRef<HTMLDivElement>(null)
   const [bookmarkTree, setBookmarkTree] = useState<BookmarkNode[]>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -83,6 +106,26 @@ export default function App() {
   }
 
   useEffect(() => { loadTree() }, [])
+
+  useEffect(() => {
+    if (bg === 'gradient') {
+      delete document.documentElement.dataset.bg
+    } else {
+      document.documentElement.dataset.bg = bg
+    }
+    localStorage.setItem('sbBg', bg)
+  }, [bg])
+
+  useEffect(() => {
+    if (!bgPanelOpen) return
+    function handleClick(e: MouseEvent) {
+      if (bgPanelRef.current && !bgPanelRef.current.contains(e.target as Node)) {
+        setBgPanelOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [bgPanelOpen])
 
   useEffect(() => {
     function handleVisibilityChange() {
@@ -716,6 +759,38 @@ export default function App() {
       <div className="brand">
         <img className="brand-icon" src="/icons/icon48.png" alt="" />
         <span className="brand-name">Smart Bookmark</span>
+      </div>
+
+      <div className="bg-switcher" ref={bgPanelRef}>
+        <button
+          className={`bg-switcher-btn${bgPanelOpen ? ' open' : ''}`}
+          onClick={() => setBgPanelOpen(o => !o)}
+          title="切换背景"
+        >
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="2" width="16" height="16" rx="2.5"/>
+            <polyline points="2 13.5 6.5 9 10.5 12 13.5 9.5 18 13.5"/>
+            <circle cx="14" cy="6.5" r="1.5"/>
+          </svg>
+        </button>
+        {bgPanelOpen && (
+          <div className="bg-panel">
+            <div className="bg-panel-title">背景</div>
+            <div className="bg-options">
+              {BG_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  className={`bg-option ${opt.cls}${bg === opt.id ? ' active' : ''}`}
+                  onClick={() => { setBg(opt.id); setBgPanelOpen(false) }}
+                >
+                  <div className="bg-option-overlay" />
+                  <span className="bg-option-label">{opt.label}</span>
+                  {bg === opt.id && <span className="bg-option-check">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="search-wrapper">

@@ -1,29 +1,179 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent:         #FF6845;
-  --accent-2:       #FF3CAC;
-  --accent-hover:   #FF7D5E;
-  --accent-pressed: #E54E2D;
-  --accent-glow:    rgba(255,104,69,0.22);
-  --accent-border:  rgba(255,104,69,0.38);
-  --accent-shadow:  rgba(255,104,69,0.20);
+  --accent:         #F05436;
+  --accent-2:       #D0368E;
+  --accent-hover:   #F46848;
+  --accent-pressed: #D83E24;
+  --accent-glow:    rgba(240,84,54,0.22);
+  --accent-border:  rgba(240,84,54,0.38);
+  --accent-shadow:  rgba(240,84,54,0.20);
   --card-bg:        rgba(255,255,255,0.048);
   --text-primary:   #FFFFFF;
   --text-secondary: rgba(255,255,255,0.60);
   --text-muted:     rgba(255,255,255,0.30);
+  /* Surface colors (theme-switchable) */
+  --surface-elevated:  #0e0920;
+  --surface-panel:     #0e0a1e;
+  --surface-ctx:       #110d24;
+  --surface-dropdown:  rgba(10, 7, 26, 0.97);
 }
 
 html, body, #root {
   height: 100%;
   font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   color: var(--text-primary);
+  /* 默认：纯极光渐变 */
   background:
     radial-gradient(ellipse 75% 65% at -5% 2%,  rgba(88,28,135,0.50) 0%, transparent 55%),
     radial-gradient(ellipse 55% 50% at 105% 0%,  rgba(15,55,110,0.48) 0%, transparent 50%),
-    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(140,45,0,0.42)  0%, transparent 52%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(140,45,0,0.42) 0%, transparent 52%),
     radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(20,10,60,0.55) 0%, transparent 50%),
     linear-gradient(155deg, #08091C 0%, #0C071E 55%, #100810 100%);
+  background-attachment: fixed;
+}
+
+/* 背景：山景 */
+html[data-bg="mountain"], html[data-bg="mountain"] body, html[data-bg="mountain"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(88,28,135,0.38) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(15,55,110,0.32) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(140,45,0,0.28)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(20,10,60,0.40)  0%, transparent 50%),
+    linear-gradient(to bottom, rgba(4,5,18,0.68) 0%, rgba(6,4,14,0.55) 60%, rgba(8,4,10,0.68) 100%),
+    url('/images/bg-mountain.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：森林 */
+html[data-bg="forest"], html[data-bg="forest"] body, html[data-bg="forest"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(10,60,30,0.45)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(5,40,20,0.35)   0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(30,80,20,0.30)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(5,30,15,0.40)   0%, transparent 50%),
+    linear-gradient(to bottom, rgba(2,12,6,0.70) 0%, rgba(4,14,8,0.55) 60%, rgba(2,10,4,0.70) 100%),
+    url('/images/bg-forest.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：海洋 */
+html[data-bg="ocean"], html[data-bg="ocean"] body, html[data-bg="ocean"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(5,50,120,0.40)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(0,80,140,0.32)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(0,40,80,0.28)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(2,30,70,0.40)   0%, transparent 50%),
+    linear-gradient(to bottom, rgba(2,8,20,0.70) 0%, rgba(4,10,22,0.55) 60%, rgba(2,8,18,0.70) 100%),
+    url('/images/bg-ocean.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：沙漠 */
+html[data-bg="desert"], html[data-bg="desert"] body, html[data-bg="desert"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(160,80,10,0.42)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(180,100,0,0.34)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(120,50,5,0.32)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(80,30,0,0.40)    0%, transparent 50%),
+    linear-gradient(to bottom, rgba(20,8,2,0.70) 0%, rgba(24,10,2,0.55) 60%, rgba(18,6,2,0.70) 100%),
+    url('/images/bg-desert.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：极光 */
+html[data-bg="aurora"], html[data-bg="aurora"] body, html[data-bg="aurora"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(0,140,80,0.45)   0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(60,0,160,0.38)   0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(0,100,120,0.32)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(0,60,40,0.42)    0%, transparent 50%),
+    linear-gradient(to bottom, rgba(0,6,14,0.72) 0%, rgba(0,8,16,0.58) 60%, rgba(0,4,10,0.72) 100%),
+    url('/images/bg-aurora.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：薰衣草 */
+html[data-bg="lavender"], html[data-bg="lavender"] body, html[data-bg="lavender"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(100,50,160,0.40)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(130,60,180,0.32)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(80,30,120,0.28)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(60,20,100,0.38)   0%, transparent 50%),
+    linear-gradient(to bottom, rgba(12,4,22,0.68) 0%, rgba(14,6,24,0.54) 60%, rgba(10,4,18,0.68) 100%),
+    url('/images/bg-lavender.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：秋景 */
+html[data-bg="autumn"], html[data-bg="autumn"] body, html[data-bg="autumn"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(160,60,0,0.42)   0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(140,40,0,0.34)   0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(120,50,0,0.30)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(80,20,0,0.40)    0%, transparent 50%),
+    linear-gradient(to bottom, rgba(18,5,0,0.70) 0%, rgba(20,6,0,0.55) 60%, rgba(16,4,0,0.70) 100%),
+    url('/images/bg-autumn.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：雪山 */
+html[data-bg="snow"], html[data-bg="snow"] body, html[data-bg="snow"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(30,70,160,0.38)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(10,50,130,0.30)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(40,80,180,0.26)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(10,40,100,0.36)  0%, transparent 50%),
+    linear-gradient(to bottom, rgba(4,8,22,0.68) 0%, rgba(6,10,24,0.54) 60%, rgba(4,8,20,0.68) 100%),
+    url('/images/bg-snow.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：日落 */
+html[data-bg="sunset"], html[data-bg="sunset"] body, html[data-bg="sunset"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(180,60,0,0.40)   0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(160,30,60,0.34)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(120,20,0,0.30)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(60,10,30,0.40)   0%, transparent 50%),
+    linear-gradient(to bottom, rgba(16,4,0,0.70) 0%, rgba(18,4,2,0.55) 60%, rgba(14,2,0,0.70) 100%),
+    url('/images/bg-sunset.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：热带 */
+html[data-bg="tropical"], html[data-bg="tropical"] body, html[data-bg="tropical"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(0,100,120,0.40)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(0,130,140,0.32)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(0,80,100,0.28)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(0,60,80,0.38)    0%, transparent 50%),
+    linear-gradient(to bottom, rgba(0,10,18,0.68) 0%, rgba(0,12,20,0.54) 60%, rgba(0,8,16,0.68) 100%),
+    url('/images/bg-tropical.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：湖泊 */
+html[data-bg="lake"], html[data-bg="lake"] body, html[data-bg="lake"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(20,60,120,0.40)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(10,80,130,0.32)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(30,60,100,0.28)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(10,40,80,0.38)   0%, transparent 50%),
+    linear-gradient(to bottom, rgba(2,8,20,0.68) 0%, rgba(4,10,22,0.54) 60%, rgba(2,8,18,0.68) 100%),
+    url('/images/bg-lake.jpg') center / cover no-repeat;
+  background-attachment: fixed;
+}
+
+/* 背景：草原 */
+html[data-bg="hills"], html[data-bg="hills"] body, html[data-bg="hills"] #root {
+  background:
+    radial-gradient(ellipse 75% 65% at -5% 2%,   rgba(20,80,30,0.40)   0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 105% 0%,   rgba(40,100,20,0.32)  0%, transparent 50%),
+    radial-gradient(ellipse 65% 55% at 102% 100%, rgba(10,70,20,0.28)   0%, transparent 52%),
+    radial-gradient(ellipse 45% 40% at 25% 105%,  rgba(5,50,15,0.38)    0%, transparent 50%),
+    linear-gradient(to bottom, rgba(2,10,4,0.68) 0%, rgba(4,12,6,0.54) 60%, rgba(2,8,4,0.68) 100%),
+    url('/images/bg-hills.jpg') center / cover no-repeat;
   background-attachment: fixed;
 }
 
@@ -217,7 +367,7 @@ html, body, #root {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 8px 32px rgba(255,122,60,0.5), 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(240,84,54,0.5), 0 4px 12px rgba(0,0,0,0.4);
   transform: translate(-50%, -50%) scale(1.1);
   animation: pill-ghost-in 0.1s ease;
 }
@@ -263,7 +413,7 @@ html, body, #root {
 .pill-add-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(255,122,60,0.08);
+  background: rgba(240,84,54,0.08);
 }
 
 /* ── Section header ── */
@@ -310,8 +460,8 @@ html, body, #root {
   transition: background 0.2s ease, color 0.2s ease;
 }
 .recent-toggle-btn.active {
-  background: rgba(255,122,60,0.18);
-  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #fff;
 }
 .recent-toggle-btn:not(.active):hover {
   color: var(--text-secondary);
@@ -377,7 +527,7 @@ html, body, #root {
   color: var(--text-primary);
 }
 .subfolder-tab.active {
-  background: rgba(255,122,60,0.18);
+  background: rgba(240,84,54,0.18);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -413,11 +563,11 @@ html, body, #root {
   cursor: grab;
 }
 .subfolder-tab--drop-active {
-  background: rgba(255,122,60,0.25) !important;
+  background: rgba(240,84,54,0.25) !important;
   border-color: var(--accent) !important;
   color: #fff !important;
   transform: scale(1.1);
-  box-shadow: 0 0 0 3px rgba(255,122,60,0.3);
+  box-shadow: 0 0 0 3px rgba(240,84,54,0.3);
 }
 .subfolder-tab-wrapper {
   transition: margin 0.12s ease, max-width 0.15s ease;
@@ -446,7 +596,7 @@ html, body, #root {
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  box-shadow: 0 8px 32px rgba(255,122,60,0.5), 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(240,84,54,0.5), 0 4px 12px rgba(0,0,0,0.4);
   transform: translate(-50%, -50%) scale(1.1);
   animation: pill-ghost-in 0.1s ease;
 }
@@ -471,7 +621,7 @@ html, body, #root {
 .subfolder-tab-add-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(255,122,60,0.08);
+  background: rgba(240,84,54,0.08);
 }
 .section-add-btn {
   margin-left: auto;
@@ -521,11 +671,11 @@ html, body, #root {
   top: calc(100% + 6px);
   right: 0;
   min-width: 110px;
-  background: rgba(10, 7, 26, 0.97);
+  background: var(--surface-dropdown);
   backdrop-filter: blur(24px);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,122,60,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(240,84,54,0.06);
   overflow: hidden;
   z-index: 50;
   animation: dropdown-in 0.15s ease;
@@ -551,14 +701,14 @@ html, body, #root {
   white-space: nowrap;
 }
 .recent-dropdown-item:hover {
-  background: rgba(255,122,60,0.1);
+  background: rgba(240,84,54,0.1);
   color: var(--text-primary);
 }
 .recent-dropdown-item.selected {
   color: var(--accent);
 }
 .recent-dropdown-item.selected:hover {
-  background: rgba(255,122,60,0.12);
+  background: rgba(240,84,54,0.12);
 }
 .recent-dropdown-check {
   position: absolute;
@@ -799,7 +949,7 @@ html, body, #root {
 }
 .fab-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 6px 28px rgba(255,122,60,0.45);
+  box-shadow: 0 6px 28px rgba(240,84,54,0.45);
 }
 .fab-btn:disabled {
   cursor: default;
@@ -869,7 +1019,7 @@ html, body, #root {
 /* ── FAB config panel ── */
 .fab-config-panel {
   width: 280px;
-  background: #0e0a1e;
+  background: var(--surface-panel);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 14px;
   padding: 16px;
@@ -948,7 +1098,7 @@ html, body, #root {
 }
 .fab-seg-btn:hover { color: var(--text-primary); }
 .fab-seg-btn.active {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
   color: #fff;
   font-weight: 600;
 }
@@ -1030,7 +1180,7 @@ html, body, #root {
 .modal-dialog {
   width: 380px;
   max-width: 90vw;
-  background: #0e0920;
+  background: var(--surface-elevated);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
@@ -1097,7 +1247,7 @@ html, body, #root {
   border-color: var(--accent);
 }
 .modal-select option {
-  background: #0e0920;
+  background: var(--surface-elevated);
   color: var(--text-primary);
 }
 .modal-footer {
@@ -1236,11 +1386,11 @@ html, body, #root {
 }
 .modal-tree-row:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.88); }
 .modal-tree-row--selected {
-  background: rgba(255,104,69,0.09);
+  background: rgba(240,84,54,0.09);
   color: #fff;
-  box-shadow: inset 2.5px 0 0 var(--accent), inset 10px 0 18px rgba(255,104,69,0.06);
+  box-shadow: inset 2.5px 0 0 var(--accent), inset 10px 0 18px rgba(240,84,54,0.06);
 }
-.modal-tree-row--selected:hover { background: rgba(255,104,69,0.13); }
+.modal-tree-row--selected:hover { background: rgba(240,84,54,0.13); }
 
 /* ── Depth guide lines ── */
 .modal-tree-guide {
@@ -1333,7 +1483,7 @@ html, body, #root {
   position: fixed;
   pointer-events: none;
   z-index: 1000;
-  background: rgba(255,122,60,0.12);
+  background: rgba(240,84,54,0.12);
   border: 1.5px solid var(--accent);
   border-radius: 10px;
   padding: 8px 14px;
@@ -1344,7 +1494,7 @@ html, body, #root {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 8px 32px rgba(255,122,60,0.35);
+  box-shadow: 0 8px 32px rgba(240,84,54,0.35);
   backdrop-filter: blur(8px);
   transform: rotate(2deg);
 }
@@ -1358,7 +1508,7 @@ html, body, #root {
 .ctx-menu {
   position: fixed;
   z-index: 500;
-  background: #110d24;
+  background: var(--surface-ctx);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5);
@@ -1399,7 +1549,7 @@ html, body, #root {
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(10, 7, 26, 0.96);
+  background: var(--surface-dropdown);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
@@ -1419,16 +1569,16 @@ html, body, #root {
   pointer-events: all;
 }
 .pill--receive {
-  border-color: rgba(255,122,60,0.4);
-  color: rgba(255,122,60,0.75);
+  border-color: rgba(240,84,54,0.4);
+  color: rgba(240,84,54,0.75);
   transition: all 0.15s;
 }
 .pill--drop-active {
-  background: rgba(255,122,60,0.25) !important;
+  background: rgba(240,84,54,0.25) !important;
   border-color: var(--accent) !important;
   color: #fff !important;
   transform: scale(1.1);
-  box-shadow: 0 0 0 3px rgba(255,122,60,0.3);
+  box-shadow: 0 0 0 3px rgba(240,84,54,0.3);
 }
 
 /* ── Card dragging / exiting / dimmed state ── */
@@ -1480,7 +1630,7 @@ html, body, #root {
   z-index: 9998;
 }
 .folder-picker {
-  background: #110d24;
+  background: var(--surface-ctx);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.55);
@@ -1542,8 +1692,8 @@ html, body, #root {
   cursor: pointer;
 }
 .folder-picker-row:hover { background: rgba(255,255,255,0.06); }
-.folder-picker-row--current { background: rgba(255,122,60,0.10); }
-.folder-picker-row--current:hover { background: rgba(255,122,60,0.16); }
+.folder-picker-row--current { background: rgba(240,84,54,0.10); }
+.folder-picker-row--current:hover { background: rgba(240,84,54,0.16); }
 .folder-picker-chevron {
   width: 20px;
   height: 20px;
@@ -1582,3 +1732,145 @@ html, body, #root {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* ── Background switcher ── */
+.bg-switcher {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 100;
+}
+.bg-switcher-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: rgba(255,255,255,0.60);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.bg-switcher-btn:hover {
+  background: rgba(0,0,0,0.44);
+  border-color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.90);
+}
+.bg-switcher-btn.open {
+  background: rgba(0,0,0,0.50);
+  border-color: rgba(255,255,255,0.30);
+  color: #fff;
+}
+.bg-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: rgba(10,7,26,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  animation: bg-panel-in 0.15s ease;
+  width: 256px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+@keyframes bg-panel-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bg-panel-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.30);
+  padding: 0 2px;
+}
+.bg-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.bg-option {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.10);
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.12s;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+.bg-option:hover {
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.35);
+  transform: scale(1.03);
+}
+.bg-option.active {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.bg-option-gradient {
+  background:
+    radial-gradient(ellipse 80% 70% at 0% 0%,   rgba(88,28,135,0.80) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 55% at 100% 0%,  rgba(15,55,110,0.75) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 100% 100%, rgba(140,45,0,0.70) 0%, transparent 55%),
+    linear-gradient(155deg, #08091C 0%, #0C071E 55%, #100810 100%);
+}
+.bg-option-mountain  { background-image: url('/images/bg-mountain.jpg'); }
+.bg-option-forest    { background-image: url('/images/bg-forest.jpg'); }
+.bg-option-ocean     { background-image: url('/images/bg-ocean.jpg'); }
+.bg-option-desert    { background-image: url('/images/bg-desert.jpg'); }
+.bg-option-aurora    { background-image: url('/images/bg-aurora.jpg'); }
+.bg-option-lavender  { background-image: url('/images/bg-lavender.jpg'); }
+.bg-option-autumn    { background-image: url('/images/bg-autumn.jpg'); }
+.bg-option-snow      { background-image: url('/images/bg-snow.jpg'); }
+.bg-option-sunset    { background-image: url('/images/bg-sunset.jpg'); }
+.bg-option-tropical  { background-image: url('/images/bg-tropical.jpg'); }
+.bg-option-lake      { background-image: url('/images/bg-lake.jpg'); }
+.bg-option-hills     { background-image: url('/images/bg-hills.jpg'); }
+.bg-option-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.30);
+}
+.bg-option-label {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.90);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.bg-option-check {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #fff;
+  font-weight: 700;
+}
+
