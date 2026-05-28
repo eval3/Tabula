@@ -86,7 +86,7 @@ export async function previewOrganize(
     }
     return { status: 'success', items: allItems }
   } catch (err) {
-    console.error('[SmartBookmark] previewOrganize failed:', err)
+    console.error('[Tabula] previewOrganize failed:', err)
     return { status: 'error', error: err instanceof Error ? err.message : '未知错误' }
   }
 }
@@ -106,7 +106,7 @@ export async function applyOrganize(
     }
     return { status: 'success' }
   } catch (err) {
-    console.error('[SmartBookmark] applyOrganize failed:', err)
+    console.error('[Tabula] applyOrganize failed:', err)
     return { status: 'error', error: err instanceof Error ? err.message : '未知错误' }
   }
 }

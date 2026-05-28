@@ -1,7 +1,7 @@
 import type { Messages } from './en'
 
 const messages: Messages = {
-  appName: '智能書籤',
+  appName: 'Tabula',
   // Popup
   badgeLoading: '載入中...',
   noApiKeyWarning: '請先在設定頁設定 API Key 和模型',
@@ -11,7 +11,7 @@ const messages: Messages = {
   shortcutHint: '快捷鍵收藏目前頁：',
   settingsBtn: '⚙ 設定',
   // Options
-  settingsPageTitle: '智能書籤 · 設定',
+  settingsPageTitle: 'Tabula · 設定',
   sectionCurrentUsage: '目前使用',
   labelAiProvider: 'AI 供應商',
   labelModel: '模型',

@@ -25,7 +25,7 @@ const BATCH_TIMEOUT_MS = 600_000
 
 async function callLLM(config: CallConfig, prompt: string, maxTokens = 64, timeoutMs: number): Promise<string> {
   const provider = PROVIDERS[config.providerId]
-  const tag = `[SmartBookmark] ${provider.name} / ${config.model}`
+  const tag = `[Tabula] ${provider.name} / ${config.model}`
   const t0 = Date.now()
 
   const controller = new AbortController()
@@ -176,15 +176,15 @@ ${bookmarks.map((b, i) => {
   try {
     raw = JSON.parse(jsonStr)
   } catch (err) {
-    console.error('[SmartBookmark] JSON 解析失败，原始响应:', text.slice(0, 200))
+    console.error('[Tabula] JSON 解析失败，原始响应:', text.slice(0, 200))
     // 响应被截断时，提取已完整解析的部分
     const lastBracket = jsonStr.lastIndexOf('},')
     const partial = lastBracket > 0 ? jsonStr.slice(0, lastBracket + 1) + ']' : '[]'
     try {
       raw = JSON.parse(partial)
-      console.warn(`[SmartBookmark] JSON 截断，仅解析到 ${raw.length}/${bookmarks.length} 条`)
+      console.warn(`[Tabula] JSON 截断，仅解析到 ${raw.length}/${bookmarks.length} 条`)
     } catch {
-      console.error('[SmartBookmark] 无法恢复 JSON，返回空数组')
+      console.error('[Tabula] 无法恢复 JSON，返回空数组')
       raw = []
     }
   }

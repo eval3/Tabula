@@ -49,8 +49,8 @@ function clearBadgeAfter(ms: number) {
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), ms)
 }
 
-const TOAST_ID = '__smart_bookmark_toast__'
-const TOAST_STYLE_ID = '__smart_bookmark_style__'
+const TOAST_ID = '__tabula_toast__'
+const TOAST_STYLE_ID = '__tabula_style__'
 
 async function showLoadingToast(tabId: number, message: string) {
   try {
@@ -98,7 +98,7 @@ async function showLoadingToast(tabId: number, message: string) {
       args: [message, TOAST_ID, TOAST_STYLE_ID],
     })
   } catch (err) {
-    console.warn('[SmartBookmark] Toast 注入失败:', err)
+    console.warn('[Tabula] Toast 注入失败:', err)
   }
 }
 
@@ -148,7 +148,7 @@ async function updateToast(tabId: number, message: string, type: 'success' | 'er
       args: [message, type, TOAST_ID, TOAST_STYLE_ID],
     })
   } catch (err) {
-    console.warn('[SmartBookmark] Toast 更新失败:', err)
+    console.warn('[Tabula] Toast 更新失败:', err)
   }
 }
 
@@ -173,22 +173,22 @@ chrome.runtime.onMessage.addListener((msg) => {
 // 快捷键：收藏当前页面并分类
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'classify-and-bookmark') return
-  console.log('[SmartBookmark] 快捷键触发:', command)
+  console.log('[Tabula] 快捷键触发:', command)
 
   const config = await getActiveConfig()
   if (!config) {
-    console.warn('[SmartBookmark] 未配置 API Key 或模型，跳转设置页')
+    console.warn('[Tabula] 未配置 API Key 或模型，跳转设置页')
     chrome.runtime.openOptionsPage()
     return
   }
-  console.log('[SmartBookmark] 当前配置:', { provider: config.providerId, model: config.model })
+  console.log('[Tabula] 当前配置:', { provider: config.providerId, model: config.model })
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!tab?.id || !tab?.url?.startsWith('http')) {
-    console.warn('[SmartBookmark] 当前页面不是 http(s)，已跳过:', tab?.url)
+    console.warn('[Tabula] 当前页面不是 http(s)，已跳过:', tab?.url)
     return
   }
-  console.log('[SmartBookmark] 当前页面:', { title: tab.title, url: tab.url })
+  console.log('[Tabula] 当前页面:', { title: tab.title, url: tab.url })
 
   startSpinner()
   await showLoadingToast(tab.id, t('toastClassifying'))
@@ -196,23 +196,23 @@ chrome.commands.onCommand.addListener(async (command) => {
   try {
     const folders = await getAllFolders()
     const folderPaths = Object.keys(folders)
-    console.log('[SmartBookmark] 现有文件夹数量:', folderPaths.length, folderPaths)
+    console.log('[Tabula] 现有文件夹数量:', folderPaths.length, folderPaths)
 
     const targetPath = await classifySingleBookmark(config, tab.title ?? tab.url, tab.url, folderPaths)
-    console.log('[SmartBookmark] AI 分类结果:', `"${targetPath}"`)
+    console.log('[Tabula] AI 分类结果:', `"${targetPath}"`)
 
     const folderId = await getOrCreateFolder(targetPath)
-    console.log('[SmartBookmark] 目标文件夹 ID:', folderId)
+    console.log('[Tabula] 目标文件夹 ID:', folderId)
 
     await chrome.bookmarks.create({ parentId: folderId, title: tab.title ?? tab.url, url: tab.url, index: 0 })
-    console.log(`[SmartBookmark] 收藏成功 →「${targetPath}」`)
+    console.log(`[Tabula] 收藏成功 →「${targetPath}」`)
 
     setBadge('✓', [22, 163, 74, 255])
     clearBadgeAfter(3000)
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
     await updateToast(activeTab?.id ?? tab.id, t('toastSaved', { folder: targetPath }), 'success')
   } catch (err) {
-    console.error('[SmartBookmark] 快捷键收藏失败:', err)
+    console.error('[Tabula] 快捷键收藏失败:', err)
     setBadge('✗', [220, 38, 38, 255])
     clearBadgeAfter(3000)
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })

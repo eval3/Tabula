@@ -867,7 +867,7 @@ export default function App() {
 
       <div className="brand">
         <img className="brand-icon" src="/icons/icon48.png" alt="" />
-        <span className="brand-name">Smart Bookmark</span>
+        <span className="brand-name">Tabula</span>
       </div>
 
       <div className="bg-switcher" ref={bgPanelRef}>

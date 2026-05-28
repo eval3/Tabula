@@ -1,5 +1,5 @@
 const messages = {
-  appName: 'Smart Bookmark',
+  appName: 'Tabula',
   // Popup
   badgeLoading: 'Loading...',
   noApiKeyWarning: 'Please configure API Key and model in Settings first',
@@ -9,7 +9,7 @@ const messages = {
   shortcutHint: 'Shortcut to bookmark this page:',
   settingsBtn: '⚙ Settings',
   // Options
-  settingsPageTitle: 'Smart Bookmark · Settings',
+  settingsPageTitle: 'Tabula · Settings',
   sectionCurrentUsage: 'Current',
   labelAiProvider: 'AI Provider',
   labelModel: 'Model',
