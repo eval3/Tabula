@@ -177,6 +177,14 @@ html[data-bg="hills"], html[data-bg="hills"] body, html[data-bg="hills"] #root {
   background-attachment: fixed;
 }
 
+/* 背景：自定义 */
+html[data-bg="custom"], html[data-bg="custom"] body, html[data-bg="custom"] #root {
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.30) 60%, rgba(0,0,0,0.55) 100%),
+    var(--custom-bg-url, #0e0920) center / cover no-repeat;
+  background-attachment: fixed;
+}
+
 /* ── App layout ── */
 .app {
   min-height: 100vh;
@@ -1797,6 +1805,50 @@ html[data-bg="hills"], html[data-bg="hills"] body, html[data-bg="hills"] #root {
   color: rgba(255,255,255,0.30);
   padding: 0 2px;
 }
+/* 自定义分栏标题行 */
+.bg-panel-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+.bg-panel-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.30);
+}
+.bg-panel-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.60);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+.bg-panel-upload-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.30);
+  color: rgba(255,255,255,0.90);
+}
+/* 空状态提示 */
+.bg-custom-empty {
+  font-size: 11px;
+  color: rgba(255,255,255,0.28);
+  text-align: center;
+  padding: 8px 0 4px;
+  line-height: 1.5;
+}
 .bg-options {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1842,6 +1894,70 @@ html[data-bg="hills"], html[data-bg="hills"] body, html[data-bg="hills"] #root {
 .bg-option-tropical  { background-image: url('/images/bg-tropical.jpg'); }
 .bg-option-lake      { background-image: url('/images/bg-lake.jpg'); }
 .bg-option-hills     { background-image: url('/images/bg-hills.jpg'); }
+.bg-option-custom {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px dashed rgba(255,255,255,0.22);
+  box-shadow: none;
+}
+.bg-option-custom:hover {
+  border-color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.08);
+}
+.bg-option-custom.active {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.bg-option-custom.has-image {
+  border-style: solid;
+  background-size: cover;
+  background-position: center;
+}
+.bg-option-upload-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(255,255,255,0.50);
+}
+.bg-option-upload-icon svg {
+  opacity: 0.7;
+}
+.bg-option-upload-hint {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.40);
+  letter-spacing: 0.02em;
+}
+/* 删除按钮（悬浮显示） */
+.bg-option-delete-btn {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.65);
+  color: rgba(255,255,255,0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 5;
+  padding: 0;
+}
+.bg-option:hover .bg-option-delete-btn {
+  opacity: 1;
+}
+.bg-option-delete-btn:hover {
+  background: rgba(220,38,38,0.85);
+  color: #fff;
+}
 .bg-option-overlay {
   position: absolute;
   inset: 0;

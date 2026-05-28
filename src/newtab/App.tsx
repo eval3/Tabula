@@ -16,9 +16,17 @@ interface DragState {
   y: number
 }
 
-type BgType = 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
+// 预设背景 ID
+type PresetBgType = 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
+// 自定义背景格式为 'custom:{id}'，整体用 string
+type BgType = PresetBgType | string
 
-const BG_OPTIONS: { id: BgType; label: string; cls: string }[] = [
+interface CustomBgItem {
+  id: string
+  dataUrl: string
+}
+
+const BG_OPTIONS: { id: PresetBgType; label: string; cls: string }[] = [
   { id: 'gradient', label: '极光',   cls: 'bg-option-gradient'  },
   { id: 'mountain', label: '山景',   cls: 'bg-option-mountain'  },
   { id: 'forest',   label: '森林',   cls: 'bg-option-forest'    },
@@ -35,11 +43,15 @@ const BG_OPTIONS: { id: BgType; label: string; cls: string }[] = [
 ]
 
 export default function App() {
-  const [bg, setBg] = useState<BgType>(() =>
-    (localStorage.getItem('sbBg') as BgType) || 'gradient'
-  )
+  const [bg, setBg] = useState<BgType>(() => {
+    const saved = localStorage.getItem('sbBg') || 'gradient'
+    // 兼容旧版 'custom'（无 ID），降级到 gradient
+    return saved === 'custom' ? 'gradient' : saved
+  })
   const [bgPanelOpen, setBgPanelOpen] = useState(false)
   const bgPanelRef = useRef<HTMLDivElement>(null)
+  const [customBgs, setCustomBgs] = useState<CustomBgItem[]>([])
+  const customBgInputRef = useRef<HTMLInputElement>(null)
   const [bookmarkTree, setBookmarkTree] = useState<BookmarkNode[]>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -107,14 +119,84 @@ export default function App() {
 
   useEffect(() => { loadTree() }, [])
 
+  // 加载所有已保存的自定义背景（兼容旧版单张存储）
   useEffect(() => {
+    chrome.storage.local.get(['sbCustomBgs', 'sbCustomBgData'], (data) => {
+      let bgs: CustomBgItem[] = Array.isArray(data.sbCustomBgs) ? data.sbCustomBgs : []
+      // 迁移旧版单张自定义背景
+      if (bgs.length === 0 && typeof data.sbCustomBgData === 'string') {
+        bgs = [{ id: 'migrated', dataUrl: data.sbCustomBgData }]
+        chrome.storage.local.set({ sbCustomBgs: bgs })
+      }
+      setCustomBgs(bgs)
+    })
+  }, [])
+
+  // 应用背景到 html 元素
+  useEffect(() => {
+    const root = document.documentElement
     if (bg === 'gradient') {
-      delete document.documentElement.dataset.bg
+      delete root.dataset.bg
+      root.style.removeProperty('--custom-bg-url')
+    } else if (bg.startsWith('custom:')) {
+      root.dataset.bg = 'custom'
+      const id = bg.slice(7)
+      const item = customBgs.find(b => b.id === id)
+      if (item) {
+        root.style.setProperty('--custom-bg-url', `url("${item.dataUrl}")`)
+      }
     } else {
-      document.documentElement.dataset.bg = bg
+      root.dataset.bg = bg
+      root.style.removeProperty('--custom-bg-url')
     }
     localStorage.setItem('sbBg', bg)
-  }, [bg])
+  }, [bg, customBgs])
+
+  // 压缩并保存上传的图片
+  function handleCustomBgUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      const maxW = 1920, maxH = 1080
+      let w = img.naturalWidth, h = img.naturalHeight
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h)
+        w = Math.round(w * ratio)
+        h = Math.round(h * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      const id = Date.now().toString()
+      const newItem: CustomBgItem = { id, dataUrl }
+      const updated = [...customBgs, newItem]
+      setCustomBgs(updated)
+      chrome.storage.local.set({ sbCustomBgs: updated })
+      setBg(`custom:${id}`)
+      setBgPanelOpen(false)
+    }
+    img.onerror = () => URL.revokeObjectURL(objectUrl)
+    img.src = objectUrl
+  }
+
+  // 删除指定自定义背景
+  function handleDeleteCustomBg(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    const updated = customBgs.filter(b => b.id !== id)
+    setCustomBgs(updated)
+    chrome.storage.local.set({ sbCustomBgs: updated })
+    // 若删除的是当前激活背景，切换到剩余第一张或默认渐变
+    if (bg === `custom:${id}`) {
+      setBg(updated.length > 0 ? `custom:${updated[0].id}` : 'gradient')
+    }
+  }
 
   useEffect(() => {
     if (!bgPanelOpen) return
@@ -775,7 +857,8 @@ export default function App() {
         </button>
         {bgPanelOpen && (
           <div className="bg-panel">
-            <div className="bg-panel-title">背景</div>
+            {/* ── 预设背景 ── */}
+            <div className="bg-panel-title">预设</div>
             <div className="bg-options">
               {BG_OPTIONS.map(opt => (
                 <button
@@ -789,6 +872,59 @@ export default function App() {
                 </button>
               ))}
             </div>
+
+            {/* ── 自定义背景 ── */}
+            <div className="bg-panel-section">
+              <span className="bg-panel-section-label">自定义</span>
+              <button
+                className="bg-panel-upload-btn"
+                onClick={() => customBgInputRef.current?.click()}
+                title="上传本地图片"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                </svg>
+                上传
+              </button>
+            </div>
+            <input
+              ref={customBgInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleCustomBgUpload}
+            />
+            {customBgs.length > 0 ? (
+              <div className="bg-options">
+                {customBgs.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    className={`bg-option bg-option-custom has-image${bg === `custom:${item.id}` ? ' active' : ''}`}
+                    style={{ backgroundImage: `url("${item.dataUrl}")` }}
+                    onClick={() => { setBg(`custom:${item.id}`); setBgPanelOpen(false) }}
+                    title={`自定义背景 ${idx + 1}`}
+                  >
+                    <div className="bg-option-overlay" />
+                    <span className="bg-option-label">图片 {idx + 1}</span>
+                    {bg === `custom:${item.id}` && <span className="bg-option-check">✓</span>}
+                    <button
+                      className="bg-option-delete-btn"
+                      onClick={(e) => handleDeleteCustomBg(e, item.id)}
+                      title="删除此背景"
+                    >
+                      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+                      </svg>
+                    </button>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-custom-empty">
+                暂无自定义背景，点击「上传」添加
+              </div>
+            )}
           </div>
         )}
       </div>
