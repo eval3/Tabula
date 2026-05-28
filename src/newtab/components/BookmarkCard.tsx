@@ -43,7 +43,7 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
   function handleClick(e: React.MouseEvent) {
     if (longPress.wasLongPressed()) return
     if ((e.target as HTMLElement).closest('.card-actions')) return
-    if (url) window.open(url, '_blank')
+    if (url) window.location.href = url
   }
 
   const dotColor = bookmark.folderName
