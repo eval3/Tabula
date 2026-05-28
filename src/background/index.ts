@@ -204,7 +204,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     const folderId = await getOrCreateFolder(targetPath)
     console.log('[SmartBookmark] 目标文件夹 ID:', folderId)
 
-    await chrome.bookmarks.create({ parentId: folderId, title: tab.title ?? tab.url, url: tab.url })
+    await chrome.bookmarks.create({ parentId: folderId, title: tab.title ?? tab.url, url: tab.url, index: 0 })
     console.log(`[SmartBookmark] 收藏成功 →「${targetPath}」`)
 
     setBadge('✓', [22, 163, 74, 255])
