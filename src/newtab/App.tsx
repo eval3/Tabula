@@ -739,7 +739,7 @@ export default function App() {
       <div className={`pills-row${drag ? ' pills-row--receive' : ''}`}>
         <button
           className={`pill${selectedFolderId === null && !searchQuery.trim() ? ' active' : ''}`}
-          onClick={() => { setSelectedFolderId(null); setSearchQuery('') }}
+          onClick={() => { setSelectedFolderId(null); setSearchQuery(''); setShowRecentlyUsed(true) }}
         >
           {t('recentPill')}
         </button>
