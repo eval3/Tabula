@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import type { BookmarkNode } from '../utils'
 import { useLongPress } from '../hooks/useLongPress'
 import { t } from '../../lib/i18n'
+import { getCachedFavicon, fetchAndCacheFavicon } from '../../lib/faviconCache'
 
 const PALETTE = ['#a855f7', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6']
 
@@ -452,22 +453,64 @@ function findParentFolderId(bookmarkId: string, folders: BookmarkNode[]): string
   return ''
 }
 
+/**
+ * src 的三种状态：
+ *   null       → 正在加载（显示首字母 fallback）
+ *   ''         → 已确认无有效 favicon（显示首字母 fallback）
+ *   dataURL    → 有效图标（显示图片）
+ */
 function Favicon({ url }: { url: string }) {
-  const [error, setError] = useState(false)
+  const [src, setSrc] = useState<string | null>(null)
 
-  let hostname = url
+  let hostname = ''
   try { hostname = new URL(url).hostname } catch {}
 
-  if (!url || error) {
-    return <div className="favicon-placeholder" />
-  }
+  useEffect(() => {
+    if (!url || !hostname) return
+    setSrc(null)
+    let cancelled = false
+
+    async function load() {
+      // 优先读取缓存（'' 表示已确认无效，直接 fallback）
+      const cached = await getCachedFavicon(hostname)
+      if (cancelled) return
+      if (cached !== null) {
+        setSrc(cached) // '' 或有效 dataURL 均设置进去
+        return
+      }
+      // 缓存未命中，通过网络获取（内部会检测并过滤默认占位图）
+      const dataUrl = await fetchAndCacheFavicon(hostname)
+      if (cancelled) return
+      setSrc(dataUrl ?? '') // null → '' 表示无有效 favicon
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [hostname, url])
+
+  // src 为 null（加载中）或 ''（已确认无效） → 显示首字母彩色图标
+  if (!url) return <div className="favicon-placeholder" />
+  if (!src) return <FaviconInitial hostname={hostname} />
 
   return (
     <img
       className="card-favicon"
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`}
+      src={src}
       alt=""
-      onError={() => setError(true)}
+      onError={() => setSrc('')}
     />
+  )
+}
+
+function FaviconInitial({ hostname }: { hostname: string }) {
+  const initial = hostname ? hostname[0].toUpperCase() : '?'
+  const color = PALETTE[hashCode(hostname) % PALETTE.length]
+  return (
+    <div
+      className="favicon-initial"
+      style={{ backgroundColor: color + '28', color }}
+    >
+      {initial}
+    </div>
   )
 }
