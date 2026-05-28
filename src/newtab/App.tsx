@@ -124,13 +124,16 @@ export default function App() {
   // 加载所有已保存的自定义背景（兼容旧版单张存储）
   useEffect(() => {
     chrome.storage.local.get(['sbCustomBgs', 'sbCustomBgData'], (data) => {
-      let bgs: CustomBgItem[] = Array.isArray(data.sbCustomBgs) ? data.sbCustomBgs : []
-      // 迁移旧版单张自定义背景
-      if (bgs.length === 0 && typeof data.sbCustomBgData === 'string') {
-        bgs = [{ id: 'migrated', dataUrl: data.sbCustomBgData }]
+      if (Array.isArray(data.sbCustomBgs)) {
+        // sbCustomBgs key 已存在（哪怕是空数组）——直接使用，不再触发迁移
+        setCustomBgs(data.sbCustomBgs)
+      } else if (typeof data.sbCustomBgData === 'string') {
+        // 仅当 sbCustomBgs 从未写入过时，才迁移旧版单张存储
+        const bgs: CustomBgItem[] = [{ id: 'migrated', dataUrl: data.sbCustomBgData }]
         chrome.storage.local.set({ sbCustomBgs: bgs })
+        setCustomBgs(bgs)
       }
-      setCustomBgs(bgs)
+      // 两者都不存在时保持默认空数组
     })
   }, [])
 
