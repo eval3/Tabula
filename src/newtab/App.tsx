@@ -92,6 +92,8 @@ export default function App() {
   const [contextMenu, setContextMenu] = useState<{ id: string; title: string; type: 'pill' | 'subtab'; x: number; y: number } | null>(null)
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [scrolled, setScrolled] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const usedDropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -120,6 +122,14 @@ export default function App() {
   }
 
   useEffect(() => { loadTree() }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => setScrolled(el.scrollTop > 0)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
 
   // 加载所有已保存的自定义背景（兼容旧版单张存储）
   useEffect(() => {
@@ -934,6 +944,7 @@ export default function App() {
         )}
       </div>
 
+      <div className="app-header">
       <div className="search-wrapper">
         <div className="search-box">
           <span className="search-icon">🔍</span>
@@ -1189,7 +1200,9 @@ export default function App() {
           ))}
         </div>
       )}
+      </div>{/* end app-header */}
 
+      <div className={`app-scroll${scrolled ? ' app-scroll--scrolled' : ''}`} ref={scrollRef}>
       <div className="card-grid">
         {reorderDragId && reorderBaseList ? (
           // Reorder mode: only show direct-sibling bookmarks with a drop slot
@@ -1251,6 +1264,7 @@ export default function App() {
           ))
         )}
       </div>
+      </div>{/* end app-scroll */}
 
       <OrganizeFAB
         status={organizeStatus}
