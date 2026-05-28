@@ -116,6 +116,7 @@ const messages = {
   bgDeleteTitle: 'Delete background',
   bgCustomEmpty: 'No custom backgrounds. Click "Upload" to add one.',
   // Background names
+  bgNameLight: 'Light',
   bgNameGradient: 'Aurora',
   bgNameMountain: 'Mountain',
   bgNameForest: 'Forest',

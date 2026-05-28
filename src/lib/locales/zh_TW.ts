@@ -118,6 +118,7 @@ const messages: Messages = {
   bgDeleteTitle: '刪除此背景',
   bgCustomEmpty: '尚無自訂背景，點擊「上傳」新增',
   // Background names
+  bgNameLight: '明亮',
   bgNameGradient: '極光',
   bgNameMountain: '山景',
   bgNameForest: '森林',

@@ -185,6 +185,17 @@ html[data-bg="custom"], html[data-bg="custom"] body, html[data-bg="custom"] #roo
   background-attachment: fixed;
 }
 
+/* 背景：明亮 */
+html[data-bg="light"], html[data-bg="light"] body, html[data-bg="light"] #root {
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.32) 50%, rgba(0,0,0,0.56) 100%),
+    radial-gradient(ellipse 80% 60% at 15%  0%,  rgba(120,200,255,1.0) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85%  5%,  rgba(255,210,140,1.0) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 50% at 50% 100%, rgba(160,230,200,1.0) 0%, transparent 55%),
+    linear-gradient(160deg, #bce0ff 0%, #fff4d6 50%, #e8f8f0 100%);
+  background-attachment: fixed;
+}
+
 /* ── App layout ── */
 .app {
   height: 100vh;
@@ -1778,6 +1789,15 @@ html[data-bg="custom"], html[data-bg="custom"] body, html[data-bg="custom"] #roo
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
+/* 书签滚动区：默认隐藏滚动条，滚动时淡入 */
+.app-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  transition: background 0.3s ease;
+}
+.app-scroll--scrolling::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+}
+
 /* ── Background switcher ── */
 .bg-switcher {
   position: fixed;
@@ -1912,6 +1932,14 @@ html[data-bg="custom"], html[data-bg="custom"] body, html[data-bg="custom"] #roo
 .bg-option.active {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
+.bg-option-light {
+  background:
+    radial-gradient(ellipse 80% 60% at 15%  0%,  rgba(120,200,255,1.0) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85%  5%,  rgba(255,210,140,1.0) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 50% at 50% 100%, rgba(160,230,200,1.0) 0%, transparent 55%),
+    linear-gradient(160deg, #bce0ff 0%, #fff4d6 50%, #e8f8f0 100%);
+}
+.bg-option-light .bg-option-label { color: rgba(0,0,0,0.65); text-shadow: none; }
 .bg-option-gradient {
   background:
     radial-gradient(ellipse 80% 70% at 0% 0%,   rgba(88,28,135,0.80) 0%, transparent 60%),

@@ -17,7 +17,7 @@ interface DragState {
 }
 
 // 预设背景 ID
-type PresetBgType = 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
+type PresetBgType = 'light' | 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
 // 自定义背景格式为 'custom:{id}'，整体用 string
 type BgType = PresetBgType | string
 
@@ -30,6 +30,7 @@ type TKey = Parameters<typeof t>[0]
 
 const BG_OPTIONS: { id: PresetBgType; labelKey: TKey; cls: string }[] = [
   { id: 'gradient', labelKey: 'bgNameGradient', cls: 'bg-option-gradient'  },
+  { id: 'light',    labelKey: 'bgNameLight',    cls: 'bg-option-light'     },
   { id: 'mountain', labelKey: 'bgNameMountain', cls: 'bg-option-mountain'  },
   { id: 'forest',   labelKey: 'bgNameForest',   cls: 'bg-option-forest'    },
   { id: 'ocean',    labelKey: 'bgNameOcean',    cls: 'bg-option-ocean'     },
@@ -94,6 +95,7 @@ export default function App() {
   const [renameValue, setRenameValue] = useState('')
   const [scrolled, setScrolled] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const usedDropdownRef = useRef<HTMLDivElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -126,9 +128,19 @@ export default function App() {
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const onScroll = () => setScrolled(el.scrollTop > 0)
+    const onScroll = () => {
+      setScrolled(el.scrollTop > 0)
+      el.classList.add('app-scroll--scrolling')
+      if (scrollingTimerRef.current) clearTimeout(scrollingTimerRef.current)
+      scrollingTimerRef.current = setTimeout(() => {
+        el.classList.remove('app-scroll--scrolling')
+      }, 800)
+    }
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      if (scrollingTimerRef.current) clearTimeout(scrollingTimerRef.current)
+    }
   }, [])
 
   // 加载所有已保存的自定义背景（兼容旧版单张存储）
