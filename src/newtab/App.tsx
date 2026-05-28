@@ -26,20 +26,22 @@ interface CustomBgItem {
   dataUrl: string
 }
 
-const BG_OPTIONS: { id: PresetBgType; label: string; cls: string }[] = [
-  { id: 'gradient', label: '极光',   cls: 'bg-option-gradient'  },
-  { id: 'mountain', label: '山景',   cls: 'bg-option-mountain'  },
-  { id: 'forest',   label: '森林',   cls: 'bg-option-forest'    },
-  { id: 'ocean',    label: '海洋',   cls: 'bg-option-ocean'     },
-  { id: 'desert',   label: '沙漠',   cls: 'bg-option-desert'    },
-  { id: 'aurora',   label: '极光云', cls: 'bg-option-aurora'    },
-  { id: 'lavender', label: '薰衣草', cls: 'bg-option-lavender'  },
-  { id: 'autumn',   label: '秋景',   cls: 'bg-option-autumn'    },
-  { id: 'snow',     label: '雪山',   cls: 'bg-option-snow'      },
-  { id: 'sunset',   label: '日落',   cls: 'bg-option-sunset'    },
-  { id: 'tropical', label: '热带',   cls: 'bg-option-tropical'  },
-  { id: 'lake',     label: '湖泊',   cls: 'bg-option-lake'      },
-  { id: 'hills',    label: '草原',   cls: 'bg-option-hills'     },
+type TKey = Parameters<typeof t>[0]
+
+const BG_OPTIONS: { id: PresetBgType; labelKey: TKey; cls: string }[] = [
+  { id: 'gradient', labelKey: 'bgNameGradient', cls: 'bg-option-gradient'  },
+  { id: 'mountain', labelKey: 'bgNameMountain', cls: 'bg-option-mountain'  },
+  { id: 'forest',   labelKey: 'bgNameForest',   cls: 'bg-option-forest'    },
+  { id: 'ocean',    labelKey: 'bgNameOcean',    cls: 'bg-option-ocean'     },
+  { id: 'desert',   labelKey: 'bgNameDesert',   cls: 'bg-option-desert'    },
+  { id: 'aurora',   labelKey: 'bgNameAurora',   cls: 'bg-option-aurora'    },
+  { id: 'lavender', labelKey: 'bgNameLavender', cls: 'bg-option-lavender'  },
+  { id: 'autumn',   labelKey: 'bgNameAutumn',   cls: 'bg-option-autumn'    },
+  { id: 'snow',     labelKey: 'bgNameSnow',     cls: 'bg-option-snow'      },
+  { id: 'sunset',   labelKey: 'bgNameSunset',   cls: 'bg-option-sunset'    },
+  { id: 'tropical', labelKey: 'bgNameTropical', cls: 'bg-option-tropical'  },
+  { id: 'lake',     labelKey: 'bgNameLake',     cls: 'bg-option-lake'      },
+  { id: 'hills',    labelKey: 'bgNameHills',    cls: 'bg-option-hills'     },
 ]
 
 export default function App() {
@@ -847,7 +849,7 @@ export default function App() {
         <button
           className={`bg-switcher-btn${bgPanelOpen ? ' open' : ''}`}
           onClick={() => setBgPanelOpen(o => !o)}
-          title="切换背景"
+          title={t('bgSwitcherTitle')}
         >
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="2" width="16" height="16" rx="2.5"/>
@@ -858,7 +860,7 @@ export default function App() {
         {bgPanelOpen && (
           <div className="bg-panel">
             {/* ── 预设背景 ── */}
-            <div className="bg-panel-title">预设</div>
+            <div className="bg-panel-title">{t('bgPresetSection')}</div>
             <div className="bg-options">
               {BG_OPTIONS.map(opt => (
                 <button
@@ -867,7 +869,7 @@ export default function App() {
                   onClick={() => { setBg(opt.id); setBgPanelOpen(false) }}
                 >
                   <div className="bg-option-overlay" />
-                  <span className="bg-option-label">{opt.label}</span>
+                  <span className="bg-option-label">{t(opt.labelKey)}</span>
                   {bg === opt.id && <span className="bg-option-check">✓</span>}
                 </button>
               ))}
@@ -875,17 +877,17 @@ export default function App() {
 
             {/* ── 自定义背景 ── */}
             <div className="bg-panel-section">
-              <span className="bg-panel-section-label">自定义</span>
+              <span className="bg-panel-section-label">{t('bgCustomSection')}</span>
               <button
                 className="bg-panel-upload-btn"
                 onClick={() => customBgInputRef.current?.click()}
-                title="上传本地图片"
+                title={t('bgUploadTitle')}
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 </svg>
-                上传
+                {t('bgUploadBtn')}
               </button>
             </div>
             <input
@@ -903,15 +905,15 @@ export default function App() {
                     className={`bg-option bg-option-custom has-image${bg === `custom:${item.id}` ? ' active' : ''}`}
                     style={{ backgroundImage: `url("${item.dataUrl}")` }}
                     onClick={() => { setBg(`custom:${item.id}`); setBgPanelOpen(false) }}
-                    title={`自定义背景 ${idx + 1}`}
+                    title={t('bgCustomItemTitle', { n: idx + 1 })}
                   >
                     <div className="bg-option-overlay" />
-                    <span className="bg-option-label">图片 {idx + 1}</span>
+                    <span className="bg-option-label">{t('bgCustomItemLabel', { n: idx + 1 })}</span>
                     {bg === `custom:${item.id}` && <span className="bg-option-check">✓</span>}
                     <button
                       className="bg-option-delete-btn"
                       onClick={(e) => handleDeleteCustomBg(e, item.id)}
-                      title="删除此背景"
+                      title={t('bgDeleteTitle')}
                     >
                       <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                         <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
@@ -922,7 +924,7 @@ export default function App() {
               </div>
             ) : (
               <div className="bg-custom-empty">
-                暂无自定义背景，点击「上传」添加
+                {t('bgCustomEmpty')}
               </div>
             )}
           </div>
