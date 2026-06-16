@@ -14,6 +14,29 @@ export interface ClassifyResult {
   folderName: string
 }
 
+// 单条收藏时从当前页面抓取的辅助信息，用于提升分类准确度
+export interface PageContext {
+  siteName?: string
+  ogType?: string
+  description?: string
+  keywords?: string
+  heading?: string
+  excerpt?: string
+}
+
+function buildPageInfo(ctx?: PageContext): string {
+  if (!ctx) return ''
+  const lines = [
+    ctx.siteName && `站点：${ctx.siteName}`,
+    ctx.ogType && `类型：${ctx.ogType}`,
+    ctx.description && `描述：${ctx.description}`,
+    ctx.keywords && `关键词：${ctx.keywords}`,
+    ctx.heading && `页面标题：${ctx.heading}`,
+    ctx.excerpt && `正文摘要：${ctx.excerpt}`,
+  ].filter(Boolean)
+  return lines.length > 0 ? `\n\n页面信息（用于理解书签内容）：\n${lines.join('\n')}` : ''
+}
+
 interface CallConfig {
   providerId: ProviderId
   apiKey: string
@@ -98,27 +121,52 @@ async function callLLM(config: CallConfig, prompt: string, maxTokens = 64, timeo
   }
 }
 
+export interface SingleBookmarkResult {
+  title: string
+  path: string
+}
+
 export async function classifySingleBookmark(
   config: CallConfig,
   title: string,
   url: string,
-  existingFolders: string[]
-): Promise<string> {
+  existingFolders: string[],
+  pageContext?: PageContext
+): Promise<SingleBookmarkResult> {
   let shortUrl = url
   try { const u = new URL(url); shortUrl = u.hostname + u.pathname.replace(/\/$/, '') } catch {}
 
-  const prompt = `将书签分类到文件夹，直接输出路径，不要分析过程。
+  const prompt = `你要为一个书签选择最合适的收藏文件夹路径，并为它起一个精简的名称。
 
-现有文件夹：
+书签原标题：${title}
+书签地址：${shortUrl}${buildPageInfo(pageContext)}
+
+现有文件夹（可选用）：
 ${existingFolders.length > 0 ? existingFolders.join('\n') : '（无）'}
 
-书签：${title} | ${shortUrl}
+判断步骤（在心里完成，不要写出来）：
+- 先根据上面的页面信息判断这个书签的主题领域是什么。
+- 再看现有文件夹里有没有主题明确匹配的：有就用它；没有就在顶层新建一个能准确概括该主题的文件夹。
 
-输出一个文件夹路径，最多两级（用"/"分隔），可新建文件夹，只返回路径。`
+要求：
+- path：文件夹路径。含义不明或命名随意的文件夹（如"123"、"新建文件夹"、"未命名"）一律视为无关，不要放入，也不要在其下创建子文件夹；文件夹名要贴合书签主题，用你自己的判断来命名，不要照搬本说明里出现的任何词语；路径最多两级，用"/"分隔。
+- title：在原标题基础上精简，去掉网站名后缀、登录/状态词、营销语和多余符号，保留能一眼识别该页面的简洁名称，不超过 20 个字。
+- 最终只输出一个 JSON 对象，不要解释、不要写出判断过程：{"title":"精简标题","path":"文件夹路径"}`
 
-  const result = await callLLM(config, prompt, 2048, SINGLE_TIMEOUT_MS)
-  if (!result) throw new Error('AI 返回了空响应，请检查模型名称或 API Key 是否正确')
-  return result
+  const text = await callLLM(config, prompt, 2048, SINGLE_TIMEOUT_MS)
+  if (!text) throw new Error('AI 返回了空响应，请检查模型名称或 API Key 是否正确')
+
+  const match = text.match(/\{[\s\S]*\}/)
+  try {
+    const parsed = JSON.parse(match ? match[0] : text) as { title?: string; path?: string }
+    const path = (parsed.path ?? '').trim()
+    if (!path) throw new Error('missing path')
+    return { title: (parsed.title ?? '').trim(), path }
+  } catch {
+    // 模型未按 JSON 输出时兜底：整段当作路径，标题沿用原标题
+    console.warn('[Tabula] 单条分类 JSON 解析失败，按纯路径兜底:', text.slice(0, 120))
+    return { title: title.trim(), path: text.trim() }
+  }
 }
 
 function buildPrefsHints(prefs?: OrganizePrefs): string {

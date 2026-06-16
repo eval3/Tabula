@@ -1,4 +1,4 @@
-import { classifySingleBookmark } from '../lib/classifier'
+import { classifySingleBookmark, type PageContext } from '../lib/classifier'
 import { getAllFolders, getOrCreateFolder } from '../lib/bookmarks'
 import { DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
 import { t } from '../lib/i18n'
@@ -200,6 +200,33 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 })
 
+// 从当前页面抓取元数据与正文摘要，帮助 AI 理解书签内容
+async function extractPageContext(tabId: number): Promise<PageContext | undefined> {
+  try {
+    const [injection] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        const meta = (sel: string) =>
+          (document.querySelector(sel)?.getAttribute('content') ?? '').trim()
+        const clean = (s: string) => s.replace(/\s+/g, ' ').trim()
+        return {
+          siteName: meta('meta[property="og:site_name"]'),
+          ogType: meta('meta[property="og:type"]'),
+          description:
+            meta('meta[name="description"]') || meta('meta[property="og:description"]'),
+          keywords: meta('meta[name="keywords"]'),
+          heading: clean(document.querySelector('h1')?.textContent ?? '').slice(0, 120),
+          excerpt: clean(document.body?.innerText ?? '').slice(0, 300),
+        }
+      },
+    })
+    return injection?.result as PageContext | undefined
+  } catch (err) {
+    console.warn('[Tabula] 抓取页面信息失败，将仅用标题和 URL 分类:', err)
+    return undefined
+  }
+}
+
 // 快捷键：收藏当前页面并分类
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'classify-and-bookmark') return
@@ -228,25 +255,28 @@ chrome.commands.onCommand.addListener(async (command) => {
     const folderPaths = Object.keys(folders)
     console.log('[Tabula] 现有文件夹数量:', folderPaths.length, folderPaths)
 
-    const targetPath = await classifySingleBookmark(config, tab.title ?? tab.url, tab.url, folderPaths)
-    console.log('[Tabula] AI 分类结果:', `"${targetPath}"`)
+    const pageContext = await extractPageContext(tab.id)
+    console.log('[Tabula] 页面信息:', pageContext)
+
+    const { title: smartTitle, path: targetPath } = await classifySingleBookmark(config, tab.title ?? tab.url, tab.url, folderPaths, pageContext)
+    console.log('[Tabula] AI 分类结果:', { title: smartTitle, path: targetPath })
 
     const folderId = await getOrCreateFolder(targetPath)
     console.log('[Tabula] 目标文件夹 ID:', folderId)
 
-    await chrome.bookmarks.create({ parentId: folderId, title: tab.title ?? tab.url, url: tab.url, index: 0 })
-    console.log(`[Tabula] 收藏成功 →「${targetPath}」`)
+    const bookmarkTitle = smartTitle || tab.title || tab.url
+    await chrome.bookmarks.create({ parentId: folderId, title: bookmarkTitle, url: tab.url, index: 0 })
+    console.log(`[Tabula] 收藏成功 →「${targetPath}/${bookmarkTitle}」`)
 
     setBadge('✓', [22, 163, 74, 255])
     clearBadgeAfter(3000)
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    await updateToast(activeTab?.id ?? tab.id, t('toastSaved', { folder: targetPath }), 'success')
+    // 始终更新发起收藏的那个 tab，否则用户切走后原 tab 的 loading 会一直残留
+    await updateToast(tab.id, t('toastSaved', { folder: targetPath }), 'success')
   } catch (err) {
     console.error('[Tabula] 快捷键收藏失败:', err)
     setBadge('✗', [220, 38, 38, 255])
     clearBadgeAfter(3000)
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
     const msg = err instanceof Error ? err.message : String(err)
-    await updateToast(activeTab?.id ?? tab.id, t('toastSaveFailed', { error: msg }), 'error')
+    await updateToast(tab.id, t('toastSaveFailed', { error: msg }), 'error')
   }
 })
