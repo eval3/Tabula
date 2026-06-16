@@ -222,6 +222,10 @@ export default function OptionsApp() {
               </button>
             </div>
           </div>
+          <div style={s.privacyNote}>
+            <div style={s.privacyNoteTitle}>{t('privacyNoteLabel')}</div>
+            <div>{t('privacyNote')}</div>
+          </div>
         </section>
 
       </div>
@@ -357,6 +361,22 @@ const s: Record<string, React.CSSProperties> = {
     background: '#fff',
   },
   hint: { fontSize: 12, color: '#9ca3af' },
+  privacyNote: {
+    background: '#f9fafb',
+    border: '1px solid #eef0f2',
+    borderRadius: 8,
+    padding: '10px 12px',
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: 1.65,
+    marginTop: 10,
+  },
+  privacyNoteTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#4b5563',
+    marginBottom: 3,
+  },
   shortcutBtn: {
     fontSize: 12,
     color: '#4b5563',

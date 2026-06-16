@@ -29,6 +29,8 @@ const messages: Messages = {
   shortcutCustomizeBtn: '修改快捷鍵',
   shortcutSetBtn: '設定快捷鍵',
   shortcutNotSet: '未設定',
+  privacyNoteLabel: '隱私說明',
+  privacyNote: '使用快捷鍵收藏時，擴充功能會讀取目前網頁的標題、描述和正文摘要，並傳送給你選擇的 AI 服務，僅用於對該書籤進行智慧分類和命名。這些內容僅用於本次請求，不會傳送到其他任何地方。',
   noProviderHint: '尚未新增任何 API Key，點擊右上角 + 開始新增',
   clearKeyBtn: '清除',
   addApiKeyTitle: '新增 API Key',

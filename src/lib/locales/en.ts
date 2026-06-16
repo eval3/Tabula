@@ -27,6 +27,8 @@ const messages = {
   shortcutCustomizeBtn: 'Change Shortcut',
   shortcutSetBtn: 'Set Shortcut',
   shortcutNotSet: 'Not set',
+  privacyNoteLabel: 'Privacy',
+  privacyNote: 'When you save a page, its title, description and a short text excerpt are read from the current page and sent to the AI provider you selected, only to classify and name the bookmark. This content is used only for that request and is not sent anywhere else.',
   noProviderHint: 'No API Key configured. Tap + to add one.',
   clearKeyBtn: 'Clear',
   addApiKeyTitle: 'Add API Key',
