@@ -197,6 +197,8 @@ chrome.runtime.onMessage.addListener((msg) => {
       stopSpinner()
       chrome.action.setBadgeText({ text: '' })
     }
+  } else if (msg?.type === 'classify-and-bookmark') {
+    void classifyAndBookmarkActiveTab()
   }
 })
 
@@ -227,11 +229,8 @@ async function extractPageContext(tabId: number): Promise<PageContext | undefine
   }
 }
 
-// 快捷键：收藏当前页面并分类
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== 'classify-and-bookmark') return
-  console.log('[Tabula] 快捷键触发:', command)
-
+// 收藏当前活动标签页并智能分类（快捷键与 popup 按钮共用）
+async function classifyAndBookmarkActiveTab(): Promise<void> {
   const config = await getActiveConfig()
   if (!config) {
     console.warn('[Tabula] 未配置 API Key 或模型，跳转设置页')
@@ -273,10 +272,17 @@ chrome.commands.onCommand.addListener(async (command) => {
     // 始终更新发起收藏的那个 tab，否则用户切走后原 tab 的 loading 会一直残留
     await updateToast(tab.id, t('toastSaved', { folder: targetPath }), 'success')
   } catch (err) {
-    console.error('[Tabula] 快捷键收藏失败:', err)
+    console.error('[Tabula] 收藏失败:', err)
     setBadge('✗', [220, 38, 38, 255])
     clearBadgeAfter(3000)
     const msg = err instanceof Error ? err.message : String(err)
     await updateToast(tab.id, t('toastSaveFailed', { error: msg }), 'error')
   }
+}
+
+// 快捷键触发收藏
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'classify-and-bookmark') return
+  console.log('[Tabula] 快捷键触发:', command)
+  void classifyAndBookmarkActiveTab()
 })

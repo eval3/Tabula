@@ -9,7 +9,6 @@ interface ProviderInfo {
 
 export default function App() {
   const [provider, setProvider] = useState<ProviderInfo | null>(null)
-  const [shortcut, setShortcut] = useState<string | null>(null)
 
   useState(() => {
     chrome.storage.sync.get(['activeProvider', 'activeModel', 'apiKeys'], (result) => {
@@ -25,14 +24,15 @@ export default function App() {
       const modelLabel = p.models.find(m => m.id === model)?.label ?? model
       setProvider({ hasKey: true, label: `${p.name} · ${modelLabel}` })
     })
-    chrome.commands.getAll((commands) => {
-      const cmd = commands.find(c => c.name === 'classify-and-bookmark')
-      setShortcut(cmd?.shortcut ?? '')
-    })
   })
 
-  const ready = provider !== null && shortcut !== null
-  const needsSetup = ready && (!provider!.hasKey || !shortcut)
+  function handleSave() {
+    chrome.runtime.sendMessage({ type: 'classify-and-bookmark' })
+    window.close()
+  }
+
+  const ready = provider !== null
+  const needsSetup = ready && !provider!.hasKey
 
   return (
     <div style={styles.container}>
@@ -44,9 +44,17 @@ export default function App() {
       {ready && (
         needsSetup ? (
           <div style={styles.setupCard}>
-            <div style={styles.setupTitle}>{t('setupTitle')}</div>
-            <CheckItem done={provider!.hasKey} label={t('setupApiKey')} />
-            <CheckItem done={!!shortcut} label={t('setupShortcut')} />
+            <div style={styles.setupIconWrap}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="7.5" cy="15.5" r="5.5" />
+                <path d="m21 2-9.6 9.6" />
+                <path d="m15.5 7.5 3 3L22 7l-3-3" />
+              </svg>
+            </div>
+            <div style={styles.setupTextWrap}>
+              <div style={styles.setupTitle}>{t('setupTitle')}</div>
+              <div style={styles.setupDesc}>{t('setupApiKeyDesc')}</div>
+            </div>
           </div>
         ) : (
           <>
@@ -54,9 +62,9 @@ export default function App() {
               <span style={styles.dot} />
               {provider!.label}
             </div>
-            <div style={styles.hint}>
-              {t('shortcutHint')}<ShortcutKeys shortcut={shortcut!} kbdStyle={styles.kbd} />
-            </div>
+            <button style={styles.saveBtn} onClick={handleSave}>
+              {t('saveCurrentTabBtn')}
+            </button>
           </>
         )
       )}
@@ -68,40 +76,6 @@ export default function App() {
         {needsSetup ? t('setupGoBtn') : t('settingsBtn')}
       </button>
     </div>
-  )
-}
-
-function CheckItem({ done, label }: { done: boolean; label: string }) {
-  return (
-    <div style={styles.checkItem}>
-      <span style={done ? styles.checkDone : styles.checkPending}>
-        {done && (
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-            <path d="M2.5 6.2L4.8 8.5L9.5 3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </span>
-      <span style={{ ...styles.checkLabel, ...(done ? styles.checkLabelDone : {}) }}>{label}</span>
-    </div>
-  )
-}
-
-function splitShortcut(shortcut: string): string[] {
-  if (shortcut.includes('+')) return shortcut.split('+')
-  return [...shortcut]
-}
-
-function ShortcutKeys({ shortcut, kbdStyle }: { shortcut: string; kbdStyle: React.CSSProperties }) {
-  const keys = splitShortcut(shortcut)
-  return (
-    <>
-      {keys.map((key, i) => (
-        <span key={i}>
-          {i > 0 && <span style={{ color: '#c7c9d1', margin: '0 2px' }}>+</span>}
-          <kbd style={kbdStyle}>{key}</kbd>
-        </span>
-      ))}
-    </>
   )
 }
 
@@ -137,18 +111,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#22c55e',
     flexShrink: 0,
   },
-  hint: { fontSize: 11.5, color: '#6b7280', lineHeight: 1.7 },
-  kbd: {
-    display: 'inline-block',
-    verticalAlign: 'middle',
-    background: '#fff',
-    border: '1px solid #d1d5db',
-    borderRadius: 4,
-    padding: '1px 6px',
-    fontSize: 10,
-    fontFamily: 'ui-monospace, "SF Mono", monospace',
-    color: '#374151',
-    boxShadow: '0 1px 0 #d1d5db',
+  saveBtn: {
+    background: '#4f46e5',
+    border: 'none',
+    borderRadius: 9,
+    padding: '11px 0',
+    fontSize: 13.5,
+    fontWeight: 600,
+    color: '#fff',
+    cursor: 'pointer',
+    width: '100%',
   },
   setupCard: {
     background: 'linear-gradient(160deg, #f5f3ff 0%, #fbfaff 100%)',
@@ -156,42 +128,34 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: 14,
     display: 'flex',
-    flexDirection: 'column',
-    gap: 11,
-  },
-  setupTitle: {
-    fontSize: 12.5,
-    fontWeight: 600,
-    color: '#4338ca',
-    marginBottom: 1,
-  },
-  checkItem: {
-    display: 'flex',
     alignItems: 'center',
-    gap: 9,
-    fontSize: 12.5,
+    gap: 12,
   },
-  checkDone: {
-    width: 17,
-    height: 17,
-    borderRadius: '50%',
-    background: '#4f46e5',
+  setupIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    background: '#e0e7ff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  checkPending: {
-    width: 17,
-    height: 17,
-    borderRadius: '50%',
-    border: '1.5px solid #c7c9d1',
-    background: '#fff',
-    boxSizing: 'border-box',
-    flexShrink: 0,
+  setupTextWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
   },
-  checkLabel: { color: '#374151' },
-  checkLabelDone: { color: '#9ca3af' },
+  setupTitle: {
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: '#4338ca',
+  },
+  setupDesc: {
+    fontSize: 11.5,
+    color: '#6b7280',
+    lineHeight: 1.5,
+  },
   settingsBtn: {
     background: '#fff',
     border: '1px solid #e5e7eb',
