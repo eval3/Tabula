@@ -17,7 +17,7 @@ English | [中文](./README.zh-CN.md)
 - **Enhanced Bookmark Edit** — Edit a bookmark's URL, title, and folder all in one place; browse the full folder tree in a sub-page that auto-scrolls to the current location
 - **Local Favicon Cache** — Website icons are cached locally for instant display; falls back to a styled initial letter when a favicon is unavailable
 - **New Bookmarks at Top** — Newly saved bookmarks appear at the top of their folder so they're always easy to find
-- **Bookmark Backup** — Save snapshots of your entire bookmark tree and restore them at any time
+- **Open in Tab Group** — Right-click a bookmark and open it in the tab group matching its parent folder, created automatically if needed
 - **Multi-Provider AI** — Bring your own API key; supports 7 mainstream AI providers
 - **Multi-Language UI** — English, Simplified Chinese, Traditional Chinese
 
@@ -46,8 +46,10 @@ English | [中文](./README.zh-CN.md)
 |------------|---------|
 | `bookmarks` | Read and write bookmark data for display and classification |
 | `tabs` | Get current tab URL and title when saving via shortcut |
+| `tabGroups` | Open a bookmark in the tab group matching its parent folder, creating the group if it doesn't exist |
+| `contextMenus` | Add an "Open in tab group" right-click menu item to bookmark cards on the new tab page |
 | `activeTab` | Detect the active tab to trigger save-and-classify and show toast notifications |
-| `storage` | Persist user settings (API keys, provider, preferences), bookmark snapshots, and favicon cache |
+| `storage` | Persist user settings (API keys, provider, preferences) and favicon cache |
 | `scripting` | Inject loading/success/error toast notifications into the active tab |
 | `history` | Query browsing history to identify recently visited bookmarks for the "Recently Used" view |
 | `host_permissions` | Fetch website favicons for display in the bookmark list |
