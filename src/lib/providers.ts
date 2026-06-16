@@ -44,9 +44,10 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     type: 'openai-compatible',
     baseURL: 'https://open.bigmodel.cn/api/paas/v4',
     models: [
-      { id: 'glm-4-flash', label: 'GLM-4 Flash' },
-      { id: 'glm-4-plus', label: 'GLM-4 Plus' },
-      { id: 'glm-4', label: 'GLM-4' },
+      { id: 'glm-4.7-flash', label: 'GLM-4.7 Flash' },
+      { id: 'glm-4.7', label: 'GLM-4.7' },
+      { id: 'glm-4.6', label: 'GLM-4.6' },
+      { id: 'glm-4.5-air', label: 'GLM-4.5 Air' },
     ],
     keyPlaceholder: '粘贴 API Key...',
     keyLink: 'https://open.bigmodel.cn',
