@@ -19,13 +19,13 @@ export default function OptionsApp() {
   const [page, setPage] = useState<'main' | 'add'>('main')
   const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
   const [addKey, setAddKey] = useState('')
-  const [shortcut, setShortcut] = useState('Alt+Shift+S')
+  const [shortcut, setShortcut] = useState('')
 
   useEffect(() => {
     const fetchShortcut = () => {
       chrome.commands.getAll((commands) => {
         const cmd = commands.find(c => c.name === 'classify-and-bookmark')
-        if (cmd?.shortcut) setShortcut(cmd.shortcut)
+        setShortcut(cmd?.shortcut ?? '')
       })
     }
     fetchShortcut()
@@ -211,13 +211,14 @@ export default function OptionsApp() {
             <div style={s.label}>{t('shortcutLabel')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
               <div style={s.hint}>
-                {t('shortcutDescLabel')}<ShortcutKeys shortcut={shortcut} kbdStyle={s.kbd} />
+                {t('shortcutDescLabel')}
+                {shortcut ? <ShortcutKeys shortcut={shortcut} kbdStyle={s.kbd} /> : t('shortcutNotSet')}
               </div>
               <button
                 style={s.shortcutBtn}
                 onClick={() => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })}
               >
-                {t('shortcutCustomizeBtn')}
+                {shortcut ? t('shortcutCustomizeBtn') : t('shortcutSetBtn')}
               </button>
             </div>
           </div>
