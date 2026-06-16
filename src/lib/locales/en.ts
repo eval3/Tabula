@@ -29,6 +29,8 @@ const messages = {
   // Newtab
   searchPlaceholder: 'Search bookmarks…',
   recentPill: 'Recent',
+  uncategorizedPill: 'Uncategorized',
+  uncategorizedTitle: 'Uncategorized Bookmarks',
   newFolderTooltip: 'New folder',
   recentMonths: 'Last {m} month(s)',
   addSubfolderTooltip: 'Add subfolder in current folder',

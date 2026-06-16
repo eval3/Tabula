@@ -31,6 +31,8 @@ const messages: Messages = {
   // Newtab
   searchPlaceholder: '搜尋書籤…',
   recentPill: '最近',
+  uncategorizedPill: '未分類',
+  uncategorizedTitle: '未分類書籤',
   newFolderTooltip: '新建資料夾',
   recentMonths: '最近 {m} 個月',
   addSubfolderTooltip: '在目前資料夾下新建子資料夾',

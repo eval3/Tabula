@@ -4,6 +4,7 @@ import OrganizeFAB from './components/OrganizeFAB'
 import {
   getDisplayRoots, searchBookmarks, findNodeById,
   getRecentBookmarks, getRecentlyUsedBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
+  getUncategorizedBookmarks,
   type BookmarkNode,
 } from './utils'
 import { previewOrganize, applyOrganize, type OrganizeStatus, type OrganizeProgress, type PreviewItem, type OrganizePrefs } from '../lib/organize'
@@ -15,6 +16,9 @@ interface DragState {
   x: number
   y: number
 }
+
+// 虚拟分组：不在任何文件夹下的根目录书签
+const UNCATEGORIZED_ID = '__uncategorized__'
 
 // 预设背景 ID
 type PresetBgType = 'light' | 'gradient' | 'mountain' | 'forest' | 'ocean' | 'desert' | 'aurora' | 'lavender' | 'autumn' | 'snow' | 'sunset' | 'tropical' | 'lake' | 'hills'
@@ -724,6 +728,8 @@ export default function App() {
     })
   }, [displayRoots, pillOrder])
 
+  const uncategorizedBookmarks = useMemo(() => getUncategorizedBookmarks(bookmarkTree), [bookmarkTree])
+
   const currentViewFolderId = subFolderNavStack.at(-1) ?? selectedFolderId
 
   const subFolders = useMemo(() => {
@@ -737,17 +743,19 @@ export default function App() {
   const displayedBookmarks = useMemo(() => {
     if (searchQuery.trim()) return searchBookmarks(searchQuery, bookmarkTree)
     if (showRecentlyUsed) return recentlyUsedBookmarks
+    if (selectedFolderId === UNCATEGORIZED_ID) return uncategorizedBookmarks
     if (selectedFolderId) {
       const folder = findNodeById(currentViewFolderId!, bookmarkTree)
       return folder ? getAllBookmarksInFolder(folder) : []
     }
     return getRecentBookmarks(bookmarkTree, recentMonths)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths, showRecentlyUsed, recentlyUsedBookmarks])
+  }, [searchQuery, bookmarkTree, selectedFolderId, currentViewFolderId, recentMonths, showRecentlyUsed, recentlyUsedBookmarks, uncategorizedBookmarks])
 
   const sectionTitle = useMemo(() => {
     if (searchQuery.trim()) return t('searchResultTitle', { query: searchQuery })
     if (showRecentlyUsed) return t('recentlyUsedTitle')
+    if (selectedFolderId === UNCATEGORIZED_ID) return t('uncategorizedTitle')
     if (!selectedFolderId) return t('recentAddedTitle')
     return null
   }, [searchQuery, selectedFolderId, showRecentlyUsed])
@@ -982,6 +990,14 @@ export default function App() {
         >
           {t('recentPill')}
         </button>
+        {uncategorizedBookmarks.length > 0 && (
+          <button
+            className={`pill${selectedFolderId === UNCATEGORIZED_ID ? ' active' : ''}`}
+            onClick={() => { setSelectedFolderId(UNCATEGORIZED_ID); setSearchQuery(''); setShowRecentlyUsed(false) }}
+          >
+            {t('uncategorizedPill')}
+          </button>
+        )}
         {sortedDisplayRoots.map((f) => (
           <div
             key={f.id}
@@ -1132,7 +1148,7 @@ export default function App() {
             )}
           </div>
         )}
-        {selectedFolderId && !subFolderEditMode && (
+        {selectedFolderId && selectedFolderId !== UNCATEGORIZED_ID && !subFolderEditMode && (
           <button
             className="subfolder-tab-add-btn section-add-btn"
             onClick={() => setShowAddSubFolderModal(true)}
@@ -1146,7 +1162,7 @@ export default function App() {
         )}
       </div>
 
-      {selectedFolderId && (
+      {selectedFolderId && selectedFolderId !== UNCATEGORIZED_ID && (
         <div className="subfolder-tabs">
           {subFolders.map((f) => (
             <div

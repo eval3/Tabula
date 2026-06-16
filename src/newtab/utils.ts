@@ -93,6 +93,23 @@ export function getAllBookmarksInFolder(node: BookmarkNode): BookmarkNode[] {
   return bookmarks
 }
 
+export function getUncategorizedBookmarks(tree: BookmarkNode[]): BookmarkNode[] {
+  const bookmarks: BookmarkNode[] = []
+  function walk(nodes: BookmarkNode[]) {
+    for (const node of nodes) {
+      if (isSystemNode(node) && node.children) {
+        for (const child of node.children) {
+          if (child.url) bookmarks.push(child)
+        }
+        walk(node.children)
+      }
+    }
+  }
+  walk(tree)
+  bookmarks.sort((a, b) => (b.dateAdded ?? 0) - (a.dateAdded ?? 0))
+  return bookmarks
+}
+
 export function getBookmarkPath(bookmarkId: string, tree: BookmarkNode[]): string | undefined {
   function walk(nodes: BookmarkNode[], path: string[]): string | undefined {
     for (const node of nodes) {

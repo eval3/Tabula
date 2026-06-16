@@ -31,6 +31,8 @@ const messages: Messages = {
   // Newtab
   searchPlaceholder: '搜索书签…',
   recentPill: '最近',
+  uncategorizedPill: '未分类',
+  uncategorizedTitle: '未分类书签',
   newFolderTooltip: '新建文件夹',
   recentMonths: '最近 {m} 月',
   addSubfolderTooltip: '在当前文件夹下新建子文件夹',
