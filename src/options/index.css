@@ -4,3 +4,6 @@ body {
   background: #f9fafb;
   color: #111;
 }
+@keyframes tabula-spin {
+  to { transform: rotate(360deg); }
+}

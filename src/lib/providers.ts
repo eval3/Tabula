@@ -12,39 +12,39 @@ export interface ProviderConfig {
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
-  claude: {
-    id: 'claude',
-    name: 'Claude',
-    type: 'anthropic',
-    models: [
-      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5（快速）' },
-      { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6（均衡）' },
-      { id: 'claude-opus-4-7', label: 'Claude Opus 4.7（强力）' },
-    ],
-    keyPlaceholder: 'sk-ant-...',
-    keyLink: 'https://console.anthropic.com',
-  },
   deepseek: {
     id: 'deepseek',
     name: 'DeepSeek',
     type: 'openai-compatible',
     baseURL: 'https://api.deepseek.com',
     models: [
-      { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（推荐）' },
-      { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash（快速）' },
+      { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
+      { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
       { id: 'deepseek-chat', label: 'DeepSeek V3' },
-      { id: 'deepseek-reasoner', label: 'DeepSeek R1（推理）' },
+      { id: 'deepseek-reasoner', label: 'DeepSeek R1' },
     ],
     keyPlaceholder: 'sk-...',
     keyLink: 'https://platform.deepseek.com',
   },
+  claude: {
+    id: 'claude',
+    name: 'Claude',
+    type: 'anthropic',
+    models: [
+      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+      { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+      { id: 'claude-opus-4-7', label: 'Claude Opus 4.7' },
+    ],
+    keyPlaceholder: 'sk-ant-...',
+    keyLink: 'https://console.anthropic.com',
+  },
   glm: {
     id: 'glm',
-    name: '智谱 GLM',
+    name: 'GLM',
     type: 'openai-compatible',
     baseURL: 'https://open.bigmodel.cn/api/paas/v4',
     models: [
-      { id: 'glm-4-flash', label: 'GLM-4 Flash（免费）' },
+      { id: 'glm-4-flash', label: 'GLM-4 Flash' },
       { id: 'glm-4-plus', label: 'GLM-4 Plus' },
       { id: 'glm-4', label: 'GLM-4' },
     ],
@@ -56,7 +56,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     name: 'Gemini',
     type: 'gemini',
     models: [
-      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash（推荐）' },
+      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
       { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
       { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
     ],
@@ -65,11 +65,11 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
   },
   qwen: {
     id: 'qwen',
-    name: '通义千问',
+    name: 'Qwen',
     type: 'openai-compatible',
     baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     models: [
-      { id: 'qwen-turbo', label: 'Qwen Turbo（快速）' },
+      { id: 'qwen-turbo', label: 'Qwen Turbo' },
       { id: 'qwen-plus', label: 'Qwen Plus' },
       { id: 'qwen-max', label: 'Qwen Max' },
     ],
@@ -82,7 +82,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     type: 'openai-compatible',
     baseURL: 'https://api.moonshot.cn/v1',
     models: [
-      { id: 'moonshot-v1-8k', label: 'Moonshot 8k（快速）' },
+      { id: 'moonshot-v1-8k', label: 'Moonshot 8k' },
       { id: 'moonshot-v1-32k', label: 'Moonshot 32k' },
       { id: 'moonshot-v1-128k', label: 'Moonshot 128k' },
     ],

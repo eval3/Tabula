@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { PROVIDER_LIST, DEFAULT_PROVIDER, type ProviderId } from '../lib/providers'
+import { fetchProviderModels, type ModelOption } from '../lib/models'
 import { t } from '../lib/i18n'
+
+// 动态模型列表缓存有效期：超过则后台刷新
+const MODEL_CACHE_TTL = 12 * 60 * 60 * 1000
+type ModelCache = Partial<Record<ProviderId, { models: ModelOption[]; ts: number }>>
 
 interface StorageData {
   activeProvider: ProviderId
@@ -20,6 +25,9 @@ export default function OptionsApp() {
   const [addTab, setAddTab] = useState<ProviderId>(DEFAULT_PROVIDER)
   const [addKey, setAddKey] = useState('')
   const [shortcut, setShortcut] = useState('')
+  const [dynamicModels, setDynamicModels] = useState<Partial<Record<ProviderId, ModelOption[]>>>({})
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [modelsError, setModelsError] = useState(false)
 
   useEffect(() => {
     const fetchShortcut = () => {
@@ -46,15 +54,67 @@ export default function OptionsApp() {
     )
   }, [])
 
+  // 启动时读取上次缓存的动态模型列表
+  useEffect(() => {
+    chrome.storage.local.get('modelCache', (result) => {
+      const cache = (result.modelCache as ModelCache) ?? {}
+      const restored: Partial<Record<ProviderId, ModelOption[]>> = {}
+      for (const [id, entry] of Object.entries(cache)) {
+        if (entry?.models?.length) restored[id as ProviderId] = entry.models
+      }
+      setDynamicModels(restored)
+    })
+  }, [])
+
   useEffect(() => {
     if (providersWithKey.length > 0 && !data.apiKeys[data.activeProvider]) {
       selectProvider(providersWithKey[0].id)
     }
   }, [data.apiKeys])
 
+  // 切到某个已配置 Key 的提供商时，按需拉取最新模型（缓存未过期则跳过）
+  useEffect(() => {
+    const apiKey = data.apiKeys[data.activeProvider]
+    if (!apiKey) return
+    chrome.storage.local.get('modelCache', (result) => {
+      const entry = (result.modelCache as ModelCache)?.[data.activeProvider]
+      if (entry && Date.now() - entry.ts < MODEL_CACHE_TTL) return
+      loadModels(data.activeProvider, apiKey)
+    })
+  }, [data.activeProvider, data.apiKeys])
+
+  async function loadModels(providerId: ProviderId, apiKey: string) {
+    setModelsLoading(true)
+    setModelsError(false)
+    try {
+      const models = await fetchProviderModels(providerId, apiKey)
+      if (models.length === 0) throw new Error('empty model list')
+      setDynamicModels(prev => ({ ...prev, [providerId]: models }))
+      chrome.storage.local.get('modelCache', (result) => {
+        const cache = (result.modelCache as ModelCache) ?? {}
+        cache[providerId] = { models, ts: Date.now() }
+        chrome.storage.local.set({ modelCache: cache })
+      })
+      // 当前选中的模型若不在新列表中，自动切到第一个，避免下拉框空选
+      setData(prev => {
+        if (prev.activeProvider !== providerId) return prev
+        if (models.some(m => m.id === prev.activeModel)) return prev
+        const next = { ...prev, activeModel: models[0].id }
+        chrome.storage.sync.set(next)
+        return next
+      })
+    } catch (err) {
+      console.warn('[Tabula] 拉取模型列表失败:', err)
+      setModelsError(true)
+    } finally {
+      setModelsLoading(false)
+    }
+  }
+
   async function selectProvider(providerId: ProviderId) {
     const provider = PROVIDER_LIST.find(p => p.id === providerId)!
-    const newData = { ...data, activeProvider: providerId, activeModel: provider.models[0].id }
+    const firstModel = dynamicModels[providerId]?.[0]?.id ?? provider.models[0].id
+    const newData = { ...data, activeProvider: providerId, activeModel: firstModel }
     setData(newData)
     await chrome.storage.sync.set(newData)
   }
@@ -89,6 +149,7 @@ export default function OptionsApp() {
   const providersWithKey = PROVIDER_LIST.filter(p => data.apiKeys[p.id])
   const activeProvider = PROVIDER_LIST.find(p => p.id === data.activeProvider)!
   const tabProvider = PROVIDER_LIST.find(p => p.id === addTab)!
+  const availableModels = dynamicModels[data.activeProvider] ?? activeProvider.models
 
   if (page === 'add') {
     return (
@@ -186,7 +247,22 @@ export default function OptionsApp() {
                 </select>
               </div>
               <div style={s.fieldGroup}>
-                <label style={s.label}>{t('labelModel')}</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={s.label}>{t('labelModel')}</label>
+                  <button
+                    style={{ ...s.refreshBtn, ...(modelsLoading ? s.refreshBtnSpinning : {}) }}
+                    onClick={() => {
+                      const apiKey = data.apiKeys[data.activeProvider]
+                      if (apiKey && !modelsLoading) loadModels(data.activeProvider, apiKey)
+                    }}
+                    title={t('refreshModelsTitle')}
+                    disabled={modelsLoading}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M13.5 8a5.5 5.5 0 1 1-1.61-3.89M13.5 2.5V5H11" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
                 <select
                   value={data.activeModel}
                   onChange={e => {
@@ -196,10 +272,12 @@ export default function OptionsApp() {
                   }}
                   style={s.select}
                 >
-                  {activeProvider.models.map(m => (
+                  {availableModels.map(m => (
                     <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>
+                {modelsLoading && <span style={s.modelsNote}>{t('modelsLoading')}</span>}
+                {modelsError && !modelsLoading && <span style={s.modelsNote}>{t('modelsFetchError')}</span>}
               </div>
             </div>
           )}
@@ -389,6 +467,21 @@ const s: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   link: { color: '#4f46e5', textDecoration: 'none' },
+  refreshBtn: {
+    border: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    padding: 2,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 4,
+  },
+  refreshBtnSpinning: {
+    animation: 'tabula-spin 0.8s linear infinite',
+    cursor: 'default',
+  },
+  modelsNote: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
   kbd: {
     background: '#f3f4f6',
     border: '1px solid #d1d5db',
