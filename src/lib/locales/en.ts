@@ -66,7 +66,7 @@ const messages = {
   deleteBtn: 'Delete',
   modalNewSubFolder: 'New Subfolder',
   modalDeleteSubFolder: 'Delete Subfolder',
-  ctxMenuOpenInGroup: 'Open in group',
+  ctxMenuOpenInGroup: 'Open in tab group',
   ctxMenuRename: 'Rename',
   modalRenameFolder: 'Rename Folder',
   dragGhostFallback: 'Bookmark',

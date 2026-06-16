@@ -68,7 +68,7 @@ const messages: Messages = {
   deleteBtn: '刪除',
   modalNewSubFolder: '新建子資料夾',
   modalDeleteSubFolder: '刪除子資料夾',
-  ctxMenuOpenInGroup: '在分組內開啟',
+  ctxMenuOpenInGroup: '在標籤頁群組中開啟',
   ctxMenuRename: '重新命名',
   modalRenameFolder: '重新命名資料夾',
   dragGhostFallback: '書籤',
