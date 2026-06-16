@@ -133,20 +133,6 @@ const messages = {
   bgNameTropical: 'Tropical',
   bgNameLake: 'Lake',
   bgNameHills: 'Hills',
-  // Backup
-  sectionBackup: 'Backup',
-  saveSnapshotBtn: 'Save Current Bookmarks',
-  savingSnapshot: 'Saving...',
-  snapshotSaved: 'Saved ✓',
-  restoreSnapshotBtn: 'Restore',
-  restoringSnapshot: 'Restoring...',
-  snapshotRestored: 'Restored ✓',
-  confirmRestoreBtn: 'Confirm Restore',
-  cancelRestoreBtn: 'Cancel',
-  restoreWarning: 'This will overwrite ALL current bookmarks. Cannot be undone.',
-  deleteSnapshotBtn: 'Delete',
-  noSnapshots: 'No backups yet',
-  snapshotBookmarkCount: '{count} bookmarks',
 } as const
 
 export type Messages = { [K in keyof typeof messages]: string }

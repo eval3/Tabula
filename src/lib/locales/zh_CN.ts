@@ -135,20 +135,6 @@ const messages: Messages = {
   bgNameTropical: '热带',
   bgNameLake: '湖泊',
   bgNameHills: '草原',
-  // Backup
-  sectionBackup: '数据备份',
-  saveSnapshotBtn: '保存当前书签',
-  savingSnapshot: '保存中...',
-  snapshotSaved: '已保存 ✓',
-  restoreSnapshotBtn: '恢复',
-  restoringSnapshot: '恢复中...',
-  snapshotRestored: '已恢复 ✓',
-  confirmRestoreBtn: '确认恢复',
-  cancelRestoreBtn: '取消',
-  restoreWarning: '将强行替换所有当前书签，操作不可撤销。',
-  deleteSnapshotBtn: '删除',
-  noSnapshots: '暂无备份',
-  snapshotBookmarkCount: '{count} 个书签',
 }
 
 export default messages
