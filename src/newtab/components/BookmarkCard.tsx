@@ -85,8 +85,12 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
   }
 
   function handleContextMenu() {
-    if (!url) return
-    const folderName = bookmark.folderName?.split('/').at(-1) ?? ''
+    const folderName = url ? (bookmark.folderName?.split('/').at(-1) ?? '') : ''
+    if (!folderName) {
+      chrome.contextMenus.update('open-bookmark-in-group', { visible: false })
+      return
+    }
+    chrome.contextMenus.update('open-bookmark-in-group', { visible: true })
     chrome.storage.session.set({ ctxBookmarkUrl: url, ctxBookmarkFolder: folderName })
   }
 
@@ -252,6 +256,7 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
           </div>
         </div>
       )}
+
     </>
   )
 }
