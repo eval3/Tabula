@@ -84,6 +84,12 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
     setShowDeleteModal(true)
   }
 
+  function handleContextMenu() {
+    if (!url) return
+    const folderName = bookmark.folderName?.split('/').at(-1) ?? ''
+    chrome.storage.session.set({ ctxBookmarkUrl: url, ctxBookmarkFolder: folderName })
+  }
+
   function handleTagClick(e: React.MouseEvent) {
     e.stopPropagation()
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -115,7 +121,7 @@ export default function BookmarkCard({ bookmark, folders, tree, onUpdated, onLon
 
   return (
     <>
-      <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown} data-bookmark-id={bookmark.id}>
+      <div className={cardClass} onClick={handleClick} onMouseDown={longPress.onMouseDown} onContextMenu={handleContextMenu} data-bookmark-id={bookmark.id}>
         <div className="card-actions">
           <button className="card-edit-btn" onClick={openEdit} title={t('editBookmarkTitle')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

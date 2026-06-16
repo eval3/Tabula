@@ -152,6 +152,36 @@ async function updateToast(tabId: number, message: string, type: 'success' | 'er
   }
 }
 
+// 右键菜单：在与书签文件夹同名的标签分组内打开
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'open-bookmark-in-group',
+    title: '在分组内打开',
+    contexts: ['page'],
+    documentUrlPatterns: [chrome.runtime.getURL('src/newtab/index.html')],
+  })
+})
+
+chrome.contextMenus.onClicked.addListener(async (info) => {
+  if (info.menuItemId !== 'open-bookmark-in-group') return
+  const data = await chrome.storage.session.get(['ctxBookmarkUrl', 'ctxBookmarkFolder'])
+  const url = data.ctxBookmarkUrl as string | undefined
+  const folderName = data.ctxBookmarkFolder as string | undefined
+  if (!url) return
+
+  const tab = await chrome.tabs.create({ url })
+  if (!tab.id || !folderName) return
+
+  const groups = await chrome.tabGroups.query({})
+  const match = groups.find(g => g.title === folderName)
+  if (match) {
+    await chrome.tabs.group({ tabIds: [tab.id], groupId: match.id })
+  } else {
+    const newGroupId = await chrome.tabs.group({ tabIds: [tab.id] })
+    await chrome.tabGroups.update(newGroupId, { title: folderName })
+  }
+})
+
 // 整理分类进度 badge
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'organize:start') {
