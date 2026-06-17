@@ -35,18 +35,18 @@ jobs:
       - name: Package zip
         run: |
           cd dist
-          zip -r ../smart-bookmark-${{ steps.version.outputs.version }}.zip .
+          zip -r ../tabula-${{ steps.version.outputs.version }}.zip .
           cd ..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: smart-bookmark-${{ steps.version.outputs.version }}
-          path: smart-bookmark-${{ steps.version.outputs.version }}.zip
+          name: tabula-${{ steps.version.outputs.version }}
+          path: tabula-${{ steps.version.outputs.version }}.zip
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: smart-bookmark-${{ steps.version.outputs.version }}.zip
+          files: tabula-${{ steps.version.outputs.version }}.zip
           generate_release_notes: true
