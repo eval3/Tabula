@@ -156,7 +156,7 @@ async function updateToast(tabId: number, message: string, type: 'success' | 'er
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'open-bookmark-in-group',
-    title: '在分组内打开',
+    title: '在标签页群组内打开',
     contexts: ['page'],
     documentUrlPatterns: [chrome.runtime.getURL('src/newtab/index.html')],
   })
