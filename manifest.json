@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tabula",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Tabula：书签智能管理，自动分类、一键整理",
   "permissions": ["bookmarks", "tabs", "tabGroups", "contextMenus", "storage", "activeTab", "scripting", "history"],
   "host_permissions": ["<all_urls>"],
