@@ -18,6 +18,7 @@ English | [中文](./README.zh-CN.md)
 - **Local Favicon Cache** — Website icons are cached locally for instant display; falls back to a styled initial letter when a favicon is unavailable
 - **New Bookmarks at Top** — Newly saved bookmarks appear at the top of their folder so they're always easy to find
 - **Open in Tab Group** — Right-click a bookmark and open it in the tab group matching its parent folder, created automatically if needed
+- **Import Tab Groups** — Save your tab groups as bookmark folders in one click; each group becomes a same-named folder with its tabs as bookmarks, scoped to the current window or all windows
 - **Multi-Provider AI** — Bring your own API key; supports 7 mainstream AI providers
 - **Multi-Language UI** — English, Simplified Chinese, Traditional Chinese
 
