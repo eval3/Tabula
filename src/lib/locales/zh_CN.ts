@@ -149,6 +149,24 @@ const messages: Messages = {
   bgNameTropical: '热带',
   bgNameLake: '湖泊',
   bgNameHills: '草原',
+  // Import tab groups
+  importGroupsTooltip: '将标签页分组导入为文件夹',
+  importGroupsTitle: '导入标签页分组',
+  importGroupsEmpty: '当前窗口没有标签页分组',
+  importGroupsSave: '保存为书签文件夹',
+  importGroupsTabCount: '{count} 个标签',
+  importGroupsAllWindows: '所有窗口',
+  importGroupsUnnamed: '{color}分组',
+  importGroupsDone: '已导入 {groups} 个分组，{bookmarks} 个书签',
+  groupColorGrey: '灰色',
+  groupColorBlue: '蓝色',
+  groupColorRed: '红色',
+  groupColorYellow: '黄色',
+  groupColorGreen: '绿色',
+  groupColorPink: '粉色',
+  groupColorPurple: '紫色',
+  groupColorCyan: '青色',
+  groupColorOrange: '橙色',
 }
 
 export default messages

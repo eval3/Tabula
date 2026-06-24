@@ -149,6 +149,24 @@ const messages: Messages = {
   bgNameTropical: '熱帶',
   bgNameLake: '湖泊',
   bgNameHills: '草原',
+  // Import tab groups
+  importGroupsTooltip: '將分頁群組匯入為資料夾',
+  importGroupsTitle: '匯入分頁群組',
+  importGroupsEmpty: '目前視窗沒有分頁群組',
+  importGroupsSave: '儲存為書籤資料夾',
+  importGroupsTabCount: '{count} 個分頁',
+  importGroupsAllWindows: '所有視窗',
+  importGroupsUnnamed: '{color}群組',
+  importGroupsDone: '已匯入 {groups} 個群組，{bookmarks} 個書籤',
+  groupColorGrey: '灰色',
+  groupColorBlue: '藍色',
+  groupColorRed: '紅色',
+  groupColorYellow: '黃色',
+  groupColorGreen: '綠色',
+  groupColorPink: '粉紅色',
+  groupColorPurple: '紫色',
+  groupColorCyan: '青色',
+  groupColorOrange: '橙色',
 }
 
 export default messages

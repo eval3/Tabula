@@ -1338,6 +1338,66 @@ html[data-bg="light"], html[data-bg="light"] body, html[data-bg="light"] #root {
   color: #fff;
 }
 .modal-btn.danger:hover { background: #dc2626; }
+.modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Import tab groups ── */
+.import-groups-allwin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.import-groups-allwin input { cursor: pointer; }
+.import-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.import-group-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.import-group-row:hover { background: rgba(255,255,255,0.06); }
+.import-group-row--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.import-group-check { flex-shrink: 0; cursor: inherit; }
+.import-group-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.import-group-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-group-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.import-groups-empty {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
 
 .delete-confirm-text {
   font-size: 14px;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import BookmarkCard from './components/BookmarkCard'
 import OrganizeFAB from './components/OrganizeFAB'
+import ImportGroupsModal from './components/ImportGroupsModal'
 import {
   getDisplayRoots, searchBookmarks, findNodeById,
   getRecentBookmarks, getRecentlyUsedBookmarks, getAllBookmarksInFolder, getAllFolders, getBookmarkPath,
@@ -86,6 +87,7 @@ export default function App() {
   const [reorderBaseList, setReorderBaseList] = useState<BookmarkNode[] | null>(null)
   const [showAddFolderModal, setShowAddFolderModal] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [showImportGroups, setShowImportGroups] = useState(false)
   const [subFolderNavStack, setSubFolderNavStack] = useState<string[]>([])
   const [subFolderEditMode, setSubFolderEditMode] = useState(false)
   const [deleteSubFolderTarget, setDeleteSubFolderTarget] = useState<{ id: string; title: string } | null>(null)
@@ -1074,6 +1076,18 @@ export default function App() {
             </svg>
           </button>
         )}
+        {!pillEditMode && (
+          <button
+            className="pill-add-btn"
+            onClick={() => setShowImportGroups(true)}
+            title={t('importGroupsTooltip')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+              <path fill="currentColor" stroke="none" transform="translate(7 8.4) scale(0.42)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className={`section-header${isBaseRecentView ? ' section-header--recent' : ''}`}>
@@ -1299,6 +1313,19 @@ export default function App() {
         progress={organizeProgress}
         onOrganize={handleOrganize}
       />
+
+      {showImportGroups && (
+        <ImportGroupsModal
+          onClose={() => setShowImportGroups(false)}
+          onDone={(msg) => {
+            setShowImportGroups(false)
+            loadTree()
+            if (toastTimer.current) clearTimeout(toastTimer.current)
+            setMoveToast(msg)
+            toastTimer.current = setTimeout(() => setMoveToast(null), 2500)
+          }}
+        />
+      )}
 
       {showAddFolderModal && (
         <div className="modal-overlay" onClick={() => { setShowAddFolderModal(false); setNewFolderName('') }}>

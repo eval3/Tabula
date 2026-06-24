@@ -147,6 +147,24 @@ const messages = {
   bgNameTropical: 'Tropical',
   bgNameLake: 'Lake',
   bgNameHills: 'Hills',
+  // Import tab groups
+  importGroupsTooltip: 'Import tab groups as folders',
+  importGroupsTitle: 'Import Tab Groups',
+  importGroupsEmpty: 'No tab groups in the current window',
+  importGroupsSave: 'Save as bookmark folders',
+  importGroupsTabCount: '{count} tabs',
+  importGroupsAllWindows: 'All windows',
+  importGroupsUnnamed: '{color} group',
+  importGroupsDone: 'Imported {groups} group(s), {bookmarks} bookmark(s)',
+  groupColorGrey: 'Grey',
+  groupColorBlue: 'Blue',
+  groupColorRed: 'Red',
+  groupColorYellow: 'Yellow',
+  groupColorGreen: 'Green',
+  groupColorPink: 'Pink',
+  groupColorPurple: 'Purple',
+  groupColorCyan: 'Cyan',
+  groupColorOrange: 'Orange',
 } as const
 
 export type Messages = { [K in keyof typeof messages]: string }
